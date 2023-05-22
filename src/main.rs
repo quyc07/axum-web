@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::io::Bytes;
 use std::net::SocketAddr;
 use std::sync::{Arc, RwLock};
 
@@ -8,6 +9,7 @@ use axum::handler::Handler;
 use axum::http::StatusCode;
 use axum::routing::{get, post, post_service};
 use serde::{Deserialize, Serialize};
+use tokio::io::AsyncWriteExt;
 
 use crate::db::Db;
 use crate::school::{Gender, Teacher};
@@ -19,13 +21,14 @@ type DbState = Arc<RwLock<Db>>;
 
 #[tokio::main]
 async fn main() {
-    let shared_db: HashMap<String, Teacher> = HashMap::new();
+    let shared_db: HashMap<String, String> = HashMap::new();
     // init(&shared_db);
 
     let app = Router::new()
         .route("/", get(index))
         .route("/users", post(create_user))
-        .route("/teachers", post(create_user));
+        .route("/teachers", post(create_teacher1))
+        .with_state(shared_db);
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
     axum::Server::bind(&addr)
@@ -54,19 +57,18 @@ async fn create_teacher(Json(payload): Json<Teacher>) -> (StatusCode, Json<Teach
     (StatusCode::CREATED, Json(teacher))
 }
 
+async fn create_teacher1(Json(payload): Json<Teacher>, State(mut db): State<HashMap<String, String>>) -> (StatusCode, Json<Teacher>) {
+    let teacher = Teacher::new(payload.name().to_string(), Gender::FEMALE, payload.age());
+    db.insert(payload.name().to_string(), "payload".to_string());
+    (StatusCode::CREATED, Json(teacher))
+}
+
 
 async fn index() -> &'static str {
     "hello world!"
 }
 
-async fn create_user1(Json(payload): Json<CreateUserRequest>) -> (StatusCode, Json<UserResponse>) {
-    let user_response = UserResponse {
-        id: 1,
-        name: payload.name.to_string(),
-        age: payload.age,
-    };
-    (StatusCode::CREATED, Json(user_response))
-}async fn create_user(Json(payload): Json<CreateUserRequest>) -> (StatusCode, Json<UserResponse>) {
+async fn create_user(Json(payload): Json<CreateUserRequest>) -> (StatusCode, Json<UserResponse>) {
     let user_response = UserResponse {
         id: 1,
         name: payload.name.to_string(),

@@ -1,3 +1,4 @@
+use serde::{Deserialize, Serialize};
 use crate::DbState;
 
 pub struct Class<'a> {
@@ -12,12 +13,13 @@ pub struct Student {
     age: u8,
 }
 
+#[derive(Deserialize, Serialize)]
 pub struct Teacher {
     name: String,
     gender: Gender,
     age: u8,
 }
-
+#[derive(Deserialize, Serialize)]
 pub enum Gender {
     MALE,
     FEMALE,
