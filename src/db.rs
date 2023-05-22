@@ -1,42 +1,36 @@
-use std::sync::{Arc, RwLock};
+use std::sync::RwLock;
+
 use crate::school::{Class, Student, Teacher};
 
 #[derive(Default)]
-pub struct Db<'a> {
-    classes: Vec<&'a Class<'a>>,
-    teachers: Vec<&'a Teacher>,
-    students: Vec<&'a Student>,
+pub struct Db {
+    // classes: Vec<Class<'a>>,
+    teachers: Vec<Teacher>,
+    students: Vec<Student>,
 }
 
-impl Db<'_> {
-    fn new() -> Db<'static> {
+impl Db {
+    fn new() -> Db {
         Db {
-            classes: vec![],
+            // classes: vec![],
             teachers: vec![],
             students: vec![],
         }
     }
 
-    pub fn add_class(&mut self, class: &Class) {
-        self.classes.push(class);
-    }
-    pub fn add_teacher(&mut self, teacher: &Teacher) {
+    // pub fn add_class(&mut self, class: Class) {
+    //     self.classes.push(class);
+    // }
+    pub fn add_teacher(&mut self, teacher: Teacher) {
         self.teachers.push(teacher);
     }
-    pub fn add_student(&mut self, student: &Student) {
+    pub fn add_student(&mut self, student: Student) {
         self.students.push(student);
     }
-    pub fn next_class_id(&self) -> u8 {
-        (self.classes.len() + 1) as u8
-    }
-
-    pub fn next_teacher_id(&self) -> u8 {
-        (self.teachers.len() + 1) as u8
-    }
-
-    pub fn next_student_id(&self) -> u8 {
-        (self.students.len() + 1) as u8
-    }
+    // pub fn get_teacher_by_name(&self, name: &str) -> &Teacher {
+    //     let teacher = self.teachers.iter().filter(|&x| &x.name() == name).collect();
+    //     teacher
+    // }
 }
 
 
