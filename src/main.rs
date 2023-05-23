@@ -4,12 +4,10 @@ use std::net::SocketAddr;
 use std::sync::{Arc, RwLock};
 
 use axum::{Json, Router};
-use axum::extract::{DefaultBodyLimit, Path, State};
-use axum::handler::Handler;
+use axum::extract::{Path, State};
 use axum::http::StatusCode;
-use axum::routing::{get, post, post_service};
+use axum::routing::{get, post};
 use serde::{Deserialize, Serialize};
-use tokio::io::AsyncWriteExt;
 
 use crate::db::Db;
 use crate::school::{Gender, Teacher};
@@ -33,8 +31,9 @@ async fn main() {
     let app = Router::new()
         .route("/", get(index))
         .route("/users", post(create_user))
-        .route("/teachers", post(create_teacher2).with_state(Arc::clone(&shared_db)))
-        .route("/getTeacher/:name", get(teacher).with_state(Arc::clone(&shared_db)));
+        .route("/teacher/create", post(create_teacher)).with_state(Arc::clone(&shared_db))
+        .route("/teacher", post(create_teacher1).with_state(Arc::clone(&shared_db)))
+        .route("/teacher/:name", get(teacher).with_state(Arc::clone(&shared_db)));
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
     axum::Server::bind(&addr)
@@ -58,24 +57,20 @@ async fn init(shared_state: &DbState) {
 //     }))
 // }
 
-async fn create_teacher(Json(payload): Json<Teacher>) -> (StatusCode, Json<Teacher>) {
+/// 最后一个参数才是body
+async fn create_teacher(State(shared_state): State<SharedState>, Json(payload): Json<Teacher>) -> (StatusCode, Json<Teacher>) {
     let teacher = Teacher::new(payload.name().to_string(), Gender::FEMALE, payload.age());
+    shared_state.write().unwrap().db.insert(payload.name().to_string(), payload.name().to_string());
     (StatusCode::CREATED, Json(teacher))
 }
 
-// async fn create_teacher1(Json(payload): Json<Teacher>, State(mut db): State<HashMap<String, String>>) -> (StatusCode, Json<Teacher>) {
-//     let teacher = Teacher::new(payload.name().to_string(), Gender::FEMALE, payload.age());
-//     db.insert(payload.name().to_string(), "payload".to_string());
-//     (StatusCode::CREATED, Json(teacher))
-// }
-
-async fn create_teacher2(State(shared_state): State<SharedState>) -> (StatusCode, Json<Teacher>) {
+async fn create_teacher1(State(shared_state): State<SharedState>) -> (StatusCode, Json<Teacher>) {
     let teacher = Teacher::new("xiaohong".to_string(), Gender::FEMALE, 18);
     shared_state.write().unwrap().db.insert("xiaohong".to_string(), "xiaohong".to_string());
     (StatusCode::CREATED, Json(teacher))
 }
 
-async fn teacher(Path(name): Path<String>,State(shared_state): State<SharedState>) -> Result<Json<Teacher>, StatusCode> {
+async fn teacher(Path(name): Path<String>, State(shared_state): State<SharedState>) -> Result<Json<Teacher>, StatusCode> {
     match shared_state.read().unwrap().db.get(name.as_str()) {
         None => Err(StatusCode::NOT_FOUND),
         Some(teacher_name) => Ok(Json(Teacher::new(teacher_name.to_string(), Gender::FEMALE, 18))),
