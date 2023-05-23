@@ -17,18 +17,24 @@ use crate::school::{Gender, Teacher};
 mod school;
 mod db;
 
+#[derive(Default)]
+struct AppState {
+    db: HashMap<String, String>,
+}
+
 type DbState = Arc<RwLock<Db>>;
+
+type SharedState = Arc<RwLock<AppState>>;
 
 #[tokio::main]
 async fn main() {
-    let shared_db: HashMap<String, String> = HashMap::new();
-    // init(&shared_db);
+    let shared_db: Arc<RwLock<AppState>> = SharedState::default();
 
     let app = Router::new()
         .route("/", get(index))
         .route("/users", post(create_user))
-        .route("/teachers", post(create_teacher1))
-        .with_state(shared_db);
+        .route("/teachers", post(create_teacher2).with_state(Arc::clone(&shared_db)))
+        .route("/getTeacher/:name", get(teacher).with_state(Arc::clone(&shared_db)));
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
     axum::Server::bind(&addr)
@@ -57,10 +63,23 @@ async fn create_teacher(Json(payload): Json<Teacher>) -> (StatusCode, Json<Teach
     (StatusCode::CREATED, Json(teacher))
 }
 
-async fn create_teacher1(Json(payload): Json<Teacher>, State(mut db): State<HashMap<String, String>>) -> (StatusCode, Json<Teacher>) {
-    let teacher = Teacher::new(payload.name().to_string(), Gender::FEMALE, payload.age());
-    db.insert(payload.name().to_string(), "payload".to_string());
+// async fn create_teacher1(Json(payload): Json<Teacher>, State(mut db): State<HashMap<String, String>>) -> (StatusCode, Json<Teacher>) {
+//     let teacher = Teacher::new(payload.name().to_string(), Gender::FEMALE, payload.age());
+//     db.insert(payload.name().to_string(), "payload".to_string());
+//     (StatusCode::CREATED, Json(teacher))
+// }
+
+async fn create_teacher2(State(shared_state): State<SharedState>) -> (StatusCode, Json<Teacher>) {
+    let teacher = Teacher::new("xiaohong".to_string(), Gender::FEMALE, 18);
+    shared_state.write().unwrap().db.insert("xiaohong".to_string(), "xiaohong".to_string());
     (StatusCode::CREATED, Json(teacher))
+}
+
+async fn teacher(Path(name): Path<String>,State(shared_state): State<SharedState>) -> Result<Json<Teacher>, StatusCode> {
+    match shared_state.read().unwrap().db.get(name.as_str()) {
+        None => Err(StatusCode::NOT_FOUND),
+        Some(teacher_name) => Ok(Json(Teacher::new(teacher_name.to_string(), Gender::FEMALE, 18))),
+    }
 }
 
 
