@@ -1,10 +1,14 @@
+use std::sync::{Arc, Mutex};
+
 use serde::{Deserialize, Serialize};
+
 use crate::DbState;
 
-pub struct Class<'a> {
+#[derive(Clone)]
+pub struct Class<> {
     name: String,
-    teacher: &'a Teacher,
-    students: Vec<&'a Student>,
+    teacher: Arc<Mutex<Teacher>>,
+    students: Vec<Arc<Mutex<Student>>>,
 }
 
 pub struct Student {
@@ -13,20 +17,21 @@ pub struct Student {
     age: u8,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Clone)]
 pub struct Teacher {
     name: String,
     gender: Gender,
     age: u8,
 }
-#[derive(Deserialize, Serialize)]
+
+#[derive(Deserialize, Serialize, Clone)]
 pub enum Gender {
     MALE,
     FEMALE,
 }
 
-impl<'a> Class<'a> {
-    fn new(name: String, teacher: &'a Teacher) -> Class<'a> {
+impl Class {
+    fn new(name: String, teacher: Arc<Mutex<Teacher>>) -> Class {
         Class {
             name,
             teacher,
@@ -64,19 +69,21 @@ impl Student {
     }
 }
 
-pub(crate) async fn init(shared_state: &DbState) {
-    let ming_ming = Teacher::new("mingming".to_string(), Gender::MALE, 23);
-    let fang_fang = Teacher::new("fangfang".to_string(), Gender::FEMALE, 22);
-    let xiao_hong = Teacher::new("xiaohong".to_string(), Gender::FEMALE, 26);
-    // let class1 = Class::new("1-1".to_string(), &ming_ming);
-    // let class2 = Class::new("1-2".to_string(), &fang_fang);
-    // let class3 = Class::new("2-1".to_string(), &xiao_hong);
-    // let class4 = Class::new("2-2".to_string(), &ming_ming);
-    // shared_state.write().unwrap().add_class(class1);
-    // shared_state.write().unwrap().add_class(class2);
-    // shared_state.write().unwrap().add_class(class3);
-    // shared_state.write().unwrap().add_class(class4);
-    shared_state.write().unwrap().add_teacher(ming_ming);
-    shared_state.write().unwrap().add_teacher(fang_fang);
-    shared_state.write().unwrap().add_teacher(xiao_hong);
+pub(crate) async fn init() -> DbState {
+    let ming_ming = Arc::new(Mutex::new(Teacher::new("mingming".to_string(), Gender::MALE, 23)));
+    let fang_fang = Arc::new(Mutex::new(Teacher::new("fangfang".to_string(), Gender::FEMALE, 22)));
+    let xiao_hong = Arc::new(Mutex::new(Teacher::new("xiaohong".to_string(), Gender::FEMALE, 26)));
+    let class1 = Arc::new(Mutex::new(Class::new("1-1".to_string(), ming_ming.clone())));
+    let class2 = Arc::new(Mutex::new(Class::new("1-2".to_string(), fang_fang.clone())));
+    let class3 = Arc::new(Mutex::new(Class::new("2-1".to_string(), xiao_hong.clone())));
+    let class4 = Arc::new(Mutex::new(Class::new("2-2".to_string(), ming_ming.clone())));
+    let db_state = DbState::default();
+    db_state.write().unwrap().classes.push(class1);
+    db_state.write().unwrap().classes.push(class2);
+    db_state.write().unwrap().classes.push(class3);
+    db_state.write().unwrap().classes.push(class4);
+    db_state.write().unwrap().teachers.push(ming_ming.clone());
+    db_state.write().unwrap().teachers.push(fang_fang.clone());
+    db_state.write().unwrap().teachers.push(xiao_hong.clone());
+    db_state
 }

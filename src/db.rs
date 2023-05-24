@@ -1,36 +1,29 @@
-use std::sync::RwLock;
+use std::sync::{Arc, Mutex};
 
 use crate::school::{Class, Student, Teacher};
 
 #[derive(Default)]
 pub struct Db {
-    // classes: Vec<Class<'a>>,
-    teachers: Vec<Teacher>,
-    students: Vec<Student>,
+    pub classes: Vec<Arc<Mutex<Class>>>,
+    pub teachers: Vec<Arc<Mutex<Teacher>>>,
+    pub students: Vec<Arc<Mutex<Student>>>,
 }
 
 impl Db {
     fn new() -> Db {
         Db {
-            // classes: vec![],
+            classes: vec![],
             teachers: vec![],
             students: vec![],
         }
     }
 
-    // pub fn add_class(&mut self, class: Class) {
-    //     self.classes.push(class);
-    // }
-    pub fn add_teacher(&mut self, teacher: Teacher) {
-        self.teachers.push(teacher);
+    pub fn get_teacher_by_name(&self, name: &str) -> Option<&Arc<Mutex<Teacher>>> {
+        if let Ok(i) = self.teachers.binary_search_by_key(&name.to_string().to_string(),|x| x.lock().unwrap().name().to_string()) {
+            return self.teachers.get(i);
+        };
+        None
     }
-    pub fn add_student(&mut self, student: Student) {
-        self.students.push(student);
-    }
-    // pub fn get_teacher_by_name(&self, name: &str) -> &Teacher {
-    //     let teacher = self.teachers.iter().filter(|&x| &x.name() == name).collect();
-    //     teacher
-    // }
 }
 
 
