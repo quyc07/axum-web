@@ -11,6 +11,7 @@ pub struct Class<> {
     students: Vec<Arc<Mutex<Student>>>,
 }
 
+#[derive(Deserialize, Serialize, Clone)]
 pub struct Student {
     name: String,
     gender: Gender,
@@ -67,6 +68,15 @@ impl Student {
             age,
         }
     }
+    pub fn name(&self) -> &str {
+        self.name.as_str()
+    }
+    pub fn age(&self) -> u8 {
+        self.age
+    }
+    pub fn gender(&self) -> &Gender {
+        &self.gender
+    }
 }
 
 pub(crate) async fn init() -> DbState {
@@ -78,12 +88,12 @@ pub(crate) async fn init() -> DbState {
     let class3 = Arc::new(Mutex::new(Class::new("2-1".to_string(), xiao_hong.clone())));
     let class4 = Arc::new(Mutex::new(Class::new("2-2".to_string(), ming_ming.clone())));
     let db_state = DbState::default();
-    db_state.write().unwrap().classes.push(class1);
-    db_state.write().unwrap().classes.push(class2);
-    db_state.write().unwrap().classes.push(class3);
-    db_state.write().unwrap().classes.push(class4);
-    db_state.write().unwrap().teachers.push(ming_ming.clone());
-    db_state.write().unwrap().teachers.push(fang_fang.clone());
-    db_state.write().unwrap().teachers.push(xiao_hong.clone());
+    db_state.write().unwrap().db.classes.push(class1);
+    db_state.write().unwrap().db.classes.push(class2);
+    db_state.write().unwrap().db.classes.push(class3);
+    db_state.write().unwrap().db.classes.push(class4);
+    db_state.write().unwrap().db.teachers.push(ming_ming.clone());
+    db_state.write().unwrap().db.teachers.push(fang_fang.clone());
+    db_state.write().unwrap().db.teachers.push(xiao_hong.clone());
     db_state
 }
