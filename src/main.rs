@@ -31,9 +31,11 @@ async fn main() {
     let app = Router::new()
         .route("/", get(index))
         .route("/users", post(create_user))
-        .route("/teacher/create", post(create_teacher)).with_state(Arc::clone(&shared_db))
-        .route("/teacher", post(create_teacher1).with_state(Arc::clone(&shared_db)))
-        .route("/teacher/:name", get(teacher).with_state(Arc::clone(&shared_db)));
+        .route("/teacher/create", post(create_teacher))
+        .route("/teacher", post(create_teacher1))
+        // 共享状态既可以是method_router级别，也可以是Router级别，Router级别所有的method_router都可以共享
+        .route("/teacher/:name", get(teacher).with_state(Arc::clone(&shared_db)))
+        .with_state(Arc::clone(&shared_db));
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
     axum::Server::bind(&addr)
