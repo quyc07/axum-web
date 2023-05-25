@@ -1,6 +1,4 @@
-use std::collections::hash_map::Entry;
 use std::net::SocketAddr;
-use std::ops::Deref;
 use std::sync::{Arc, Mutex, RwLock};
 
 use axum::{Json, Router};
@@ -10,7 +8,7 @@ use axum::routing::{get, post};
 use serde::{Deserialize, Serialize};
 
 use crate::db::Db;
-use crate::school::{Class, Student, Teacher};
+use crate::school::{Student, Teacher};
 
 mod school;
 mod db;
@@ -30,6 +28,7 @@ async fn main() {
         .route("/student", post(create_student))
         .route("/student/:name", get(student))
         .route("/students", get(students))
+        .route("/student/update", post(update_student))
         .route("/teacher", post(create_teacher))
         // 共享状态既可以是method_router级别，也可以是Router级别，Router级别所有的method_router都可以共享
         .route("/teacher/:name", get(teacher))
@@ -83,15 +82,26 @@ async fn student(Path(name): Path<String>, State(shared_state): State<DbState>) 
 }
 
 async fn teachers(State(db_state): State<DbState>) -> (StatusCode, Json<Vec<Teacher>>) {
-    (StatusCode::FOUND, Json(db_state.read().unwrap().db.teachers.values().map(|x| x.lock().unwrap().clone()).collect()))
+    (StatusCode::OK, Json(db_state.read().unwrap().db.teachers.values().map(|x| x.lock().unwrap().clone()).collect()))
 }
 
 async fn students(State(db_state): State<DbState>) -> (StatusCode, Json<Vec<Student>>) {
-    (StatusCode::FOUND, Json(db_state.read().unwrap().db.students.values().map(|x| x.lock().unwrap().clone()).collect()))
+    (StatusCode::OK, Json(db_state.read().unwrap().db.students.values().map(|x| x.lock().unwrap().clone()).collect()))
+}
+
+async fn update_student(State(db_state): State<DbState>, Json(student): Json<Student>) -> (StatusCode, Json<Student>) {
+    let mut db_state = db_state.write().unwrap();
+    return match db_state.db.get_student_by_name(student.name()) {
+        Some(_) => {
+            db_state.db.students.insert(student.name().to_string(), Arc::new(Mutex::new(student.clone())));
+            (StatusCode::OK, Json(student))
+        }
+        None => (StatusCode::NOT_FOUND, Json(student)),
+    };
 }
 
 async fn classes(State(db_state): State<DbState>) -> (StatusCode, Json<Vec<ClassVo>>) {
-    (StatusCode::FOUND, Json(db_state.read().unwrap().db.classes.values().map(|x| {
+    (StatusCode::OK, Json(db_state.read().unwrap().db.classes.values().map(|x| {
         let class = x.lock().unwrap();
         let class_vo = ClassVo {
             name: class.name().to_string(),
