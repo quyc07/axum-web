@@ -1,13 +1,16 @@
+use std::collections::hash_map::Entry;
 use std::net::SocketAddr;
+use std::ops::Deref;
 use std::sync::{Arc, Mutex, RwLock};
 
 use axum::{Json, Router};
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::routing::{get, post};
+use serde::{Deserialize, Serialize};
 
 use crate::db::Db;
-use crate::school::{Student, Teacher};
+use crate::school::{Class, Student, Teacher};
 
 mod school;
 mod db;
@@ -26,9 +29,12 @@ async fn main() {
         .route("/", get(index))
         .route("/student", post(create_student))
         .route("/student/:name", get(student))
+        .route("/students", get(students))
         .route("/teacher", post(create_teacher))
         // 共享状态既可以是method_router级别，也可以是Router级别，Router级别所有的method_router都可以共享
         .route("/teacher/:name", get(teacher))
+        .route("/teachers", get(teachers))
+        .route("/classes", get(classes))
         .with_state(Arc::clone(&db_state));
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
@@ -40,7 +46,11 @@ async fn main() {
 
 /// 最后一个参数才是body
 async fn create_teacher(State(db_state): State<DbState>, Json(teacher): Json<Teacher>) -> (StatusCode, Json<Teacher>) {
-    db_state.write().unwrap().db.teachers.entry(teacher.name().to_string()).or_insert(Arc::new(Mutex::new(teacher.clone())));
+    let mut guard = db_state.write().unwrap();
+    if guard.db.teachers.contains_key(teacher.name()) {
+        return (StatusCode::CONFLICT, Json(teacher));
+    }
+    guard.db.teachers.entry(teacher.name().to_string()).or_insert(Arc::new(Mutex::new(teacher.clone())));
     (StatusCode::CREATED, Json(teacher))
 }
 
@@ -57,7 +67,11 @@ async fn index() -> &'static str {
 }
 
 async fn create_student(State(db_state): State<DbState>, Json(student): Json<Student>) -> (StatusCode, Json<Student>) {
-    db_state.write().unwrap().db.students.entry(student.name().to_string()).or_insert(Arc::new(Mutex::new(student.clone())));
+    let mut guard = db_state.write().unwrap();
+    if guard.db.students.contains_key(student.name()) {
+        return (StatusCode::CONFLICT, Json(student));
+    }
+    guard.db.students.entry(student.name().to_string()).or_insert(Arc::new(Mutex::new(student.clone())));
     (StatusCode::CREATED, Json(student))
 }
 
@@ -66,4 +80,31 @@ async fn student(Path(name): Path<String>, State(shared_state): State<DbState>) 
         None => Err(StatusCode::NOT_FOUND),
         Some(student) => Ok(Json(student.lock().unwrap().clone()))
     }
+}
+
+async fn teachers(State(db_state): State<DbState>) -> (StatusCode, Json<Vec<Teacher>>) {
+    (StatusCode::FOUND, Json(db_state.read().unwrap().db.teachers.values().map(|x| x.lock().unwrap().clone()).collect()))
+}
+
+async fn students(State(db_state): State<DbState>) -> (StatusCode, Json<Vec<Student>>) {
+    (StatusCode::FOUND, Json(db_state.read().unwrap().db.students.values().map(|x| x.lock().unwrap().clone()).collect()))
+}
+
+async fn classes(State(db_state): State<DbState>) -> (StatusCode, Json<Vec<ClassVo>>) {
+    (StatusCode::FOUND, Json(db_state.read().unwrap().db.classes.values().map(|x| {
+        let class = x.lock().unwrap();
+        let class_vo = ClassVo {
+            name: class.name().to_string(),
+            teacher: class.teacher().lock().unwrap().clone(),
+            students: class.students().iter().map(|x| x.lock().unwrap().clone()).collect(),
+        };
+        class_vo
+    }).collect()))
+}
+
+#[derive(Deserialize, Serialize, Clone)]
+struct ClassVo {
+    name: String,
+    teacher: Teacher,
+    students: Vec<Student>,
 }

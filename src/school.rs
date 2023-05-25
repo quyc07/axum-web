@@ -39,6 +39,16 @@ impl Class {
             students: Vec::new(),
         }
     }
+
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+    pub fn teacher(&self) -> &Arc<Mutex<Teacher>> {
+        &self.teacher
+    }
+    pub fn students(&self) -> &Vec<Arc<Mutex<Student>>> {
+        &self.students
+    }
 }
 
 impl Teacher {
@@ -100,7 +110,7 @@ pub(crate) async fn init() -> DbState {
     let fang_fang_name = fang_fang.lock().unwrap().name.clone();
     let xiao_hong_name = xiao_hong.lock().unwrap().name.clone();
     db_state.write().unwrap().db.teachers.insert(ming_ming_name, ming_ming.clone());
-    db_state.write().unwrap().db.teachers.insert(fang_fang_name,fang_fang.clone());
-    db_state.write().unwrap().db.teachers.insert(xiao_hong_name,xiao_hong.clone());
+    db_state.write().unwrap().db.teachers.insert(fang_fang_name, fang_fang.clone());
+    db_state.write().unwrap().db.teachers.insert(xiao_hong_name, xiao_hong.clone());
     db_state
 }
