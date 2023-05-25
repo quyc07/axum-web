@@ -40,12 +40,12 @@ async fn main() {
 
 /// 最后一个参数才是body
 async fn create_teacher(State(db_state): State<DbState>, Json(teacher): Json<Teacher>) -> (StatusCode, Json<Teacher>) {
-    db_state.write().unwrap().db.teachers.push(Arc::new(Mutex::new(teacher.clone())));
+    db_state.write().unwrap().db.teachers.entry(teacher.name().to_string()).or_insert(Arc::new(Mutex::new(teacher.clone())));
     (StatusCode::CREATED, Json(teacher))
 }
 
 async fn teacher(Path(name): Path<String>, State(shared_state): State<DbState>) -> Result<Json<Teacher>, StatusCode> {
-    match shared_state.read().unwrap().db.get_teacher_by_name(name) {
+    match shared_state.read().unwrap().db.get_teacher_by_name(name.as_str()) {
         None => Err(StatusCode::NOT_FOUND),
         Some(teacher) => Ok(Json(teacher.lock().unwrap().clone()))
     }
@@ -57,7 +57,7 @@ async fn index() -> &'static str {
 }
 
 async fn create_student(State(db_state): State<DbState>, Json(student): Json<Student>) -> (StatusCode, Json<Student>) {
-    db_state.write().unwrap().db.students.push(Arc::new(Mutex::new(student.clone())));
+    db_state.write().unwrap().db.students.entry(student.name().to_string()).or_insert(Arc::new(Mutex::new(student.clone())));
     (StatusCode::CREATED, Json(student))
 }
 

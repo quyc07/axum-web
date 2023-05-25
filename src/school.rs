@@ -88,12 +88,19 @@ pub(crate) async fn init() -> DbState {
     let class3 = Arc::new(Mutex::new(Class::new("2-1".to_string(), xiao_hong.clone())));
     let class4 = Arc::new(Mutex::new(Class::new("2-2".to_string(), ming_ming.clone())));
     let db_state = DbState::default();
-    db_state.write().unwrap().db.classes.push(class1);
-    db_state.write().unwrap().db.classes.push(class2);
-    db_state.write().unwrap().db.classes.push(class3);
-    db_state.write().unwrap().db.classes.push(class4);
-    db_state.write().unwrap().db.teachers.push(ming_ming.clone());
-    db_state.write().unwrap().db.teachers.push(fang_fang.clone());
-    db_state.write().unwrap().db.teachers.push(xiao_hong.clone());
+    let class_name_1 = class1.lock().unwrap().name.clone();
+    db_state.write().unwrap().db.classes.entry(class_name_1).or_insert(class1);
+    let class_name_2 = class2.lock().unwrap().name.clone();
+    db_state.write().unwrap().db.classes.entry(class_name_2).or_insert(class2);
+    let class_name_3 = class3.lock().unwrap().name.clone();
+    db_state.write().unwrap().db.classes.entry(class_name_3).or_insert(class3);
+    let class_name_4 = class4.lock().unwrap().name.clone();
+    db_state.write().unwrap().db.classes.entry(class_name_4).or_insert(class4);
+    let ming_ming_name = ming_ming.lock().unwrap().name.clone();
+    let fang_fang_name = fang_fang.lock().unwrap().name.clone();
+    let xiao_hong_name = xiao_hong.lock().unwrap().name.clone();
+    db_state.write().unwrap().db.teachers.insert(ming_ming_name, ming_ming.clone());
+    db_state.write().unwrap().db.teachers.insert(fang_fang_name,fang_fang.clone());
+    db_state.write().unwrap().db.teachers.insert(xiao_hong_name,xiao_hong.clone());
     db_state
 }
