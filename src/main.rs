@@ -23,18 +23,23 @@ type DbState = Arc<RwLock<AppState>>;
 #[tokio::main]
 async fn main() {
     let db_state = school::init().await;
-    let app = Router::new()
-        .route("/", get(index))
+    let student_route = Router::new()
         .route("/student", post(create_student))
         .route("/student/:name", get(student))
         .route("/students", get(students))
-        .route("/student/update", post(update_student))
+        .route("/student/update", post(update_student));
+    let teacher_router = Router::new()
         .route("/teacher", post(create_teacher))
-        // 共享状态既可以是method_router级别，也可以是Router级别，Router级别所有的method_router都可以共享
         .route("/teacher/:name", get(teacher))
-        .route("/teachers", get(teachers))
+        .route("/teachers", get(teachers));
+    let app = Router::new()
+        .merge(student_route)
+        .merge(teacher_router)
+        .route("/", get(index))
         .route("/classes", get(classes))
+        // 共享状态既可以是method_router级别，也可以是Router级别，Router级别所有的method_router都可以共享
         .with_state(Arc::clone(&db_state));
+
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
     axum::Server::bind(&addr)
