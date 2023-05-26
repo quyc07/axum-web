@@ -14,4 +14,4 @@ RUN cargo build
 EXPOSE 3000
 
 # Set the startup command to run the application
-CMD ["./target/target/axum-web"]
+CMD ["./target/debug/axum-web"]
