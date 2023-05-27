@@ -107,7 +107,7 @@ async fn update_student(State(db_state): State<DbState>, Json(student): Json<Stu
 }
 
 async fn classes(State(db_state): State<DbState>) -> (StatusCode, Json<Vec<ClassVo>>) {
-    (StatusCode::OK, Json(db_state.read().unwrap().db.classes.values().map(|x| {
+    (StatusCode::OK, Json(db_state.read().unwrap().db.get_all_classes().iter().map(|x| {
         let class = x.lock().unwrap();
         let class_vo = ClassVo {
             name: class.name().to_string(),
