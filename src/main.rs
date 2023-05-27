@@ -1,5 +1,5 @@
 use std::net::SocketAddr;
-use std::sync::{Arc, Mutex, RwLock};
+use std::sync::{Arc, RwLock};
 
 use axum::{Json, Router};
 use axum::extract::{Path, State};
@@ -52,10 +52,10 @@ async fn main() {
 /// 最后一个参数才是body
 async fn create_teacher(State(db_state): State<DbState>, Json(teacher): Json<Teacher>) -> (StatusCode, Json<Teacher>) {
     let mut guard = db_state.write().unwrap();
-    if guard.db.teachers.contains_key(teacher.name()) {
+    if guard.db.contains_teacher(teacher.name()) {
         return (StatusCode::CONFLICT, Json(teacher));
     }
-    guard.db.teachers.entry(teacher.name().to_string()).or_insert(Arc::new(Mutex::new(teacher.clone())));
+    guard.db.insert_teacher(teacher.clone());
     (StatusCode::CREATED, Json(teacher))
 }
 
@@ -73,10 +73,10 @@ async fn index() -> &'static str {
 
 async fn create_student(State(db_state): State<DbState>, Json(student): Json<Student>) -> (StatusCode, Json<Student>) {
     let mut guard = db_state.write().unwrap();
-    if guard.db.students.contains_key(student.name()) {
+    if guard.db.contains_student(student.name()) {
         return (StatusCode::CONFLICT, Json(student));
     }
-    guard.db.students.entry(student.name().to_string()).or_insert(Arc::new(Mutex::new(student.clone())));
+    guard.db.insert_student(student.clone());
     (StatusCode::CREATED, Json(student))
 }
 
@@ -88,18 +88,18 @@ async fn student(Path(name): Path<String>, State(shared_state): State<DbState>) 
 }
 
 async fn teachers(State(db_state): State<DbState>) -> (StatusCode, Json<Vec<Teacher>>) {
-    (StatusCode::OK, Json(db_state.read().unwrap().db.teachers.values().map(|x| x.lock().unwrap().clone()).collect()))
+    (StatusCode::OK, Json(db_state.read().unwrap().db.get_all_teachers().iter().map(|x| x.lock().unwrap().clone()).collect()))
 }
 
 async fn students(State(db_state): State<DbState>) -> (StatusCode, Json<Vec<Student>>) {
-    (StatusCode::OK, Json(db_state.read().unwrap().db.students.values().map(|x| x.lock().unwrap().clone()).collect()))
+    (StatusCode::OK, Json(db_state.read().unwrap().db.get_all_students().iter().map(|x| x.lock().unwrap().clone()).collect()))
 }
 
 async fn update_student(State(db_state): State<DbState>, Json(student): Json<Student>) -> (StatusCode, Json<Student>) {
     let mut db_state = db_state.write().unwrap();
     return match db_state.db.get_student_by_name(student.name()) {
         Some(_) => {
-            db_state.db.students.insert(student.name().to_string(), Arc::new(Mutex::new(student.clone())));
+            db_state.db.insert_student(student.clone());
             (StatusCode::OK, Json(student))
         }
         None => (StatusCode::NOT_FOUND, Json(student)),
