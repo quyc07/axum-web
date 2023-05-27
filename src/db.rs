@@ -1,10 +1,6 @@
 use std::collections::HashMap;
-use std::ops::Deref;
-use std::sync::{Arc, Mutex, RwLock};
-use axum::Json;
-use redis::{Commands, JsonCommands, RedisResult};
-use tokio::io::AsyncWriteExt;
-use crate::{AppState, DbState};
+use std::sync::{Arc, Mutex};
+use redis::{Commands, RedisResult};
 
 use crate::school::{Class, Gender, Student, Teacher};
 
@@ -26,7 +22,6 @@ impl HashMapDb {
 }
 
 impl Db for HashMapDb {
-
     fn insert_teacher(&mut self, teacher: Teacher) {
         self.teachers.entry(teacher.name().to_string()).or_insert(Arc::new(Mutex::new(teacher.clone())));
     }
@@ -81,10 +76,10 @@ pub trait Db {
         let zhang_san = Arc::new(Mutex::new(Teacher::new("zhangsan".to_string(), Gender::MALE, 26)));
         let li_si = Arc::new(Mutex::new(Teacher::new("lisi".to_string(), Gender::MALE, 29)));
         let wang_wu = Arc::new(Mutex::new(Teacher::new("wangwu".to_string(), Gender::MALE, 30)));
-        let class1 = Class::new("1-1".to_string(), zhang_san.clone(), vec![ming_ming.clone(),fang_fang.clone()]);
-        let class2 = Class::new("1-2".to_string(), li_si.clone(), vec![xiao_bai.clone(),xiao_hong.clone()]);
-        let class3 = Class::new("2-1".to_string(), wang_wu.clone(), vec![wang_hai.clone(),ling_ling.clone()]);
-        let class4 = Class::new("2-2".to_string(), zhang_san.clone(), vec![hui_hui.clone(),qing_qing.clone()]);
+        let class1 = Class::new("1-1".to_string(), zhang_san.clone(), vec![ming_ming.clone(), fang_fang.clone()]);
+        let class2 = Class::new("1-2".to_string(), li_si.clone(), vec![xiao_bai.clone(), xiao_hong.clone()]);
+        let class3 = Class::new("2-1".to_string(), wang_wu.clone(), vec![wang_hai.clone(), ling_ling.clone()]);
+        let class4 = Class::new("2-2".to_string(), zhang_san.clone(), vec![hui_hui.clone(), qing_qing.clone()]);
         self.insert_class(class1);
         self.insert_class(class2);
         self.insert_class(class3);
@@ -127,7 +122,6 @@ impl Default for RedisDb {
 }
 
 impl Db for RedisDb {
-
     fn insert_teacher(&mut self, teacher: Teacher) {
         let _: RedisResult<()> = self.client.client.get_connection().unwrap()
             .set(teacher.name(), serde_json::to_string(&teacher).unwrap());
