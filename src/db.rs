@@ -53,6 +53,10 @@ impl Db for HashMapDb {
     fn contains_student(&self, name: &str) -> bool {
         self.students.contains_key(name)
     }
+
+    fn get_all_classes(&self) -> Vec<&Arc<Mutex<Class>>> {
+        self.classes.values().collect()
+    }
 }
 
 pub trait Db {
@@ -64,6 +68,7 @@ pub trait Db {
     fn get_student_by_name(&self, name: &str) -> Option<&Arc<Mutex<Student>>>;
     fn get_all_students(&self) -> Vec<&Arc<Mutex<Student>>>;
     fn contains_student(&self, name: &str) -> bool;
+    fn get_all_classes(&self) -> Vec<&Arc<Mutex<Class>>>;
 }
 
 
@@ -109,6 +114,10 @@ impl Db for RedisDb {
     }
 
     fn contains_student(&self, name: &str) -> bool {
+        todo!()
+    }
+
+    fn get_all_classes(&self) -> Vec<&Arc<Mutex<Class>>> {
         todo!()
     }
 }
