@@ -7,15 +7,16 @@ use axum::http::StatusCode;
 use axum::routing::{get, post};
 use serde::{Deserialize, Serialize};
 
-use crate::db::Db;
+use crate::db::{Db, HashMapDb, RedisDb};
 use crate::school::{Student, Teacher};
 
 mod school;
 mod db;
+mod redis_db;
 
 #[derive(Default)]
 struct AppState {
-    db: Db,
+    db: HashMapDb,
 }
 
 type DbState = Arc<RwLock<AppState>>;
@@ -41,7 +42,7 @@ async fn main() {
         .with_state(Arc::clone(&db_state));
 
 
-    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+    let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
         .await

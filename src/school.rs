@@ -1,8 +1,9 @@
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, RwLock};
 
 use serde::{Deserialize, Serialize};
+use crate::db::HashMapDb;
 
-use crate::DbState;
+use crate::{AppState, DbState};
 
 #[derive(Clone)]
 pub struct Class<> {
@@ -105,7 +106,7 @@ pub(crate) async fn init() -> DbState {
     let class2 = Arc::new(Mutex::new(Class::new("1-2".to_string(), Arc::clone(&li_si), vec![Arc::clone(&xiao_bai), Arc::clone(&xiao_hong)])));
     let class3 = Arc::new(Mutex::new(Class::new("2-1".to_string(), Arc::clone(&wang_wu), vec![Arc::clone(&wang_hai), Arc::clone(&ling_ling)])));
     let class4 = Arc::new(Mutex::new(Class::new("2-2".to_string(), Arc::clone(&zhang_san), vec![Arc::clone(&hui_hui), Arc::clone(&qing_qing)])));
-    let db_state = DbState::default();
+    let db_state = Arc::new(RwLock::new(AppState{db:HashMapDb::new()}));
     let class_name_1 = class1.lock().unwrap().name.clone();
     db_state.write().unwrap().db.classes.entry(class_name_1).or_insert(class1);
     let class_name_2 = class2.lock().unwrap().name.clone();
