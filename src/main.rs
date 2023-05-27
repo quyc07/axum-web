@@ -16,14 +16,15 @@ mod redis_db;
 
 #[derive(Default)]
 struct AppState {
-    db: HashMapDb,
+    db: RedisDb,
 }
 
 type DbState = Arc<RwLock<AppState>>;
 
 #[tokio::main]
 async fn main() {
-    let db_state = school::init().await;
+    let db_state = Arc::new(RwLock::new(AppState::default()));
+    db_state.write().unwrap().db.init();
     let student_route = Router::new()
         .route("/student", post(create_student))
         .route("/student/:name", get(student))
