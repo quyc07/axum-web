@@ -14,6 +14,7 @@ use crate::school::{Student, Teacher};
 mod school;
 mod db;
 mod redis_db;
+mod err;
 
 #[derive(Default)]
 struct AppState {
@@ -63,8 +64,8 @@ async fn create_teacher(State(db_state): State<DbState>, Json(teacher): Json<Tea
 
 async fn teacher(Path(name): Path<String>, State(shared_state): State<DbState>) -> Result<Json<Teacher>, StatusCode> {
     match shared_state.read().unwrap().db.get_teacher_by_name(name.as_str()) {
-        None => Err(StatusCode::NOT_FOUND),
-        Some(teacher) => Ok(Json(teacher.lock().unwrap().clone()))
+        Err(err) => Err(StatusCode::NOT_FOUND),
+        Ok(teacher) => Ok(Json(teacher.lock().unwrap().clone()))
     }
 }
 
