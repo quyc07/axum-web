@@ -124,8 +124,8 @@ impl Default for RedisDb {
 }
 
 const TEACHER: &str = "teacher";
-const STUDENT: &str = "teacher";
-const CLASS: &str = "teacher";
+const STUDENT: &str = "student";
+const CLASS: &str = "class";
 
 
 impl Db for RedisDb {
@@ -180,7 +180,7 @@ impl Db for RedisDb {
     }
 
     fn get_all_classes(&self) -> Vec<Arc<Mutex<Class>>> {
-        let classes: HashMap<String, String> = self.client.client.get_connection().unwrap().hgetall(STUDENT).unwrap();
+        let classes: HashMap<String, String> = self.client.client.get_connection().unwrap().hgetall(CLASS).unwrap();
         let classes: Vec<ClassRedisPo> = classes.iter().map(|(k, v)| serde_json::from_str(v).unwrap()).collect();
         classes.iter().map(|x| {
             Arc::new(Mutex::new(Class {
