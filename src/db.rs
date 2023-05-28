@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::ops::Deref;
 use std::string::ToString;
 use std::sync::{Arc, Mutex};
 use redis::{Commands, RedisResult};
@@ -135,10 +136,16 @@ impl Db for RedisDb {
     }
 
     fn get_teacher_by_name(&self, name: &str) -> Option<Arc<Mutex<Teacher>>> {
-        let teacher: String = self.client.client.get_connection().unwrap().hget(TEACHER, name).unwrap();
-        let teacher: Arc<Mutex<Teacher>> = Arc::new(Mutex::new(serde_json::from_str(teacher.as_str()).unwrap()));
-        let teacher = Arc::clone(&teacher);
-        Some(teacher)
+        let result: RedisResult<String> = self.client.client.get_connection().unwrap().hget(TEACHER, name);
+        return match result {
+            Ok(redis_string) => {
+                Some(Arc::new(Mutex::new(serde_json::from_str(redis_string.as_str()).unwrap())))
+            }
+            Err(e) => {
+                eprintln!("fail to get teacher by name {}", e);
+                None
+            }
+        };
     }
 
     fn get_all_teachers(&self) -> Vec<Arc<Mutex<Teacher>>> {
@@ -160,10 +167,16 @@ impl Db for RedisDb {
     }
 
     fn get_student_by_name(&self, name: &str) -> Option<Arc<Mutex<Student>>> {
-        let student: String = self.client.client.get_connection().unwrap().hget(STUDENT, name).unwrap();
-        let student: Arc<Mutex<Student>> = Arc::new(Mutex::new(serde_json::from_str(student.as_str()).unwrap()));
-        let student = Arc::clone(&student);
-        Some(student)
+        let result: RedisResult<String> = self.client.client.get_connection().unwrap().hget(STUDENT, name);
+        return match result {
+            Ok(redis_string) => {
+                Some(Arc::new(Mutex::new(serde_json::from_str(redis_string.as_str()).unwrap())))
+            }
+            Err(e) => {
+                eprintln!("fail to get teacher by name {}", e);
+                None
+            }
+        };
     }
 
     fn get_all_students(&self) -> Vec<Arc<Mutex<Student>>> {
