@@ -50,8 +50,11 @@ impl Db for HashMapDb {
         self.students.entry(student.name().to_string()).or_insert(Arc::new(Mutex::new(student.clone())));
     }
 
-    fn get_student_by_name(&self, name: &str) -> Option<Arc<Mutex<Student>>> {
-        Some(Arc::clone(self.students.get(name)?))
+    fn get_student_by_name(&self, name: &str) -> Result<Arc<Mutex<Student>>, SchoolErr> {
+        if let Some(student) = self.students.get(name) {
+            return Ok(student.clone());
+        }
+        Err(SchoolErr::NotFound)
     }
 
     fn get_all_students(&self) -> Vec<Arc<Mutex<Student>>> {
@@ -109,7 +112,7 @@ pub trait Db {
     fn get_all_teachers(&self) -> Vec<Arc<Mutex<Teacher>>>;
     fn contains_teacher(&self, name: &str) -> bool;
     fn insert_student(&mut self, student: Student);
-    fn get_student_by_name(&self, name: &str) -> Option<Arc<Mutex<Student>>>;
+    fn get_student_by_name(&self, name: &str) -> Result<Arc<Mutex<Student>>, SchoolErr>;
     fn get_all_students(&self) -> Vec<Arc<Mutex<Student>>>;
     fn contains_student(&self, name: &str) -> bool;
     fn get_all_classes(&self) -> Vec<Arc<Mutex<Class>>>;
@@ -163,17 +166,9 @@ impl Db for RedisDb {
             .hset(STUDENT, student.name(), serde_json::to_string(&student).unwrap());
     }
 
-    fn get_student_by_name(&self, name: &str) -> Option<Arc<Mutex<Student>>> {
-        let result: RedisResult<String> = self.client.client.get_connection().unwrap().hget(STUDENT, name);
-        return match result {
-            Ok(redis_string) => {
-                Some(Arc::new(Mutex::new(serde_json::from_str(redis_string.as_str()).unwrap())))
-            }
-            Err(e) => {
-                eprintln!("fail to get teacher by name {}", e);
-                None
-            }
-        };
+    fn get_student_by_name(&self, name: &str) -> Result<Arc<Mutex<Student>>, SchoolErr> {
+        let redis_string: String = self.client.client.get_connection().unwrap().hget(STUDENT, name)?;
+        Ok(Arc::new(Mutex::new(serde_json::from_str(redis_string.as_str()).unwrap())))
     }
 
     fn get_all_students(&self) -> Vec<Arc<Mutex<Student>>> {

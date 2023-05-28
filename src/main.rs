@@ -81,10 +81,7 @@ async fn create_student(State(db_state): State<DbState>, Json(student): Json<Stu
 }
 
 async fn student(Path(name): Path<String>, State(shared_state): State<DbState>) -> Result<Json<Student>, StatusCode> {
-    match shared_state.read().unwrap().db.get_student_by_name(name.as_str()) {
-        None => Err(StatusCode::NOT_FOUND),
-        Some(student) => Ok(Json(student.lock().unwrap().clone()))
-    }
+    Ok(Json(shared_state.read().unwrap().db.get_student_by_name(name.as_str())?.lock().unwrap().clone()))
 }
 
 async fn teachers(State(db_state): State<DbState>) -> (StatusCode, Json<Vec<Teacher>>) {
@@ -97,13 +94,11 @@ async fn students(State(db_state): State<DbState>) -> (StatusCode, Json<Vec<Stud
 
 async fn update_student(State(db_state): State<DbState>, Json(student): Json<Student>) -> (StatusCode, Json<Student>) {
     let mut db_state = db_state.write().unwrap();
-    return match db_state.db.get_student_by_name(student.name()) {
-        Some(_) => {
-            db_state.db.insert_student(student.clone());
-            (StatusCode::OK, Json(student))
-        }
-        None => (StatusCode::NOT_FOUND, Json(student)),
-    };
+    if db_state.db.contains_student(student.name()) {
+        db_state.db.insert_student(student.clone());
+        return (StatusCode::OK, Json(student));
+    }
+    (StatusCode::NOT_FOUND, Json(student))
 }
 
 async fn classes(State(db_state): State<DbState>) -> (StatusCode, Json<Vec<ClassVo>>) {
