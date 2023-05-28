@@ -182,24 +182,28 @@ impl Db for RedisDb {
     fn get_all_classes(&self) -> Vec<Arc<Mutex<Class>>> {
         let classes: HashMap<String, String> = self.client.client.get_connection().unwrap().hgetall(CLASS).unwrap();
         let classes: Vec<ClassRedisPo> = classes.iter().map(|(k, v)| serde_json::from_str(v).unwrap()).collect();
-        classes.iter().map(|x| {
-            Arc::new(Mutex::new(Class {
-                name: x.name().to_string(),
-                teacher: self.get_teacher_by_name(x.teacher_name.as_str()).unwrap(),
-                students: x.students_name.iter().map(|s| self.get_student_by_name(s).unwrap()).collect(),
-            }))
-        }).collect()
+        classes.iter().map(|x| Arc::new(Mutex::new(self.class_redis_po_2_class(x)))).collect()
     }
 
     fn insert_class(&mut self, class: Class) {
-        let class_redis_po = ClassRedisPo::new(class);
+        let class_redis_po = ClassRedisPo::from(class);
         let _: RedisResult<()> = self.client.client.get_connection().unwrap()
             .hset(CLASS, class_redis_po.name(), serde_json::to_string(&class_redis_po).unwrap());
     }
 }
 
+impl RedisDb {
+    fn class_redis_po_2_class(&self, x: &ClassRedisPo) -> Class {
+        Class {
+            name: x.name().to_string(),
+            teacher: self.get_teacher_by_name(x.teacher_name.as_str()).unwrap(),
+            students: x.students_name.iter().map(|s| self.get_student_by_name(s).unwrap()).collect(),
+        }
+    }
+}
+
 #[derive(Deserialize, Serialize)]
-struct ClassRedisPo {
+pub struct ClassRedisPo {
     name: String,
     teacher_name: String,
     students_name: Vec<String>,
@@ -209,7 +213,10 @@ impl ClassRedisPo {
     fn name(&self) -> &str {
         self.name.as_str()
     }
-    fn new(class: Class) -> ClassRedisPo {
+}
+
+impl From<Class> for ClassRedisPo {
+    fn from(class: Class) -> Self {
         ClassRedisPo {
             name: class.name().to_string(),
             teacher_name: class.teacher().lock().unwrap().name().to_string(),
