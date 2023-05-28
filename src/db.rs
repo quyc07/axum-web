@@ -1,8 +1,7 @@
 use std::collections::HashMap;
-use std::mem::transmute;
-use std::ops::Deref;
 use std::string::ToString;
 use std::sync::{Arc, Mutex};
+
 use redis::{Commands, RedisResult};
 use serde::{Deserialize, Serialize};
 use crate::err::SchoolErr;
@@ -27,8 +26,9 @@ impl HashMapDb {
 }
 
 impl Db for HashMapDb {
-    fn insert_teacher(&mut self, teacher: Teacher) {
+    fn insert_teacher(&mut self, teacher: Teacher) -> Result<(), SchoolErr> {
         self.teachers.entry(teacher.name().to_string()).or_insert(Arc::new(Mutex::new(teacher.clone())));
+        Ok(())
     }
 
     fn get_teacher_by_name(&self, name: &str) -> Result<Arc<Mutex<Teacher>>, SchoolErr> {
@@ -38,16 +38,17 @@ impl Db for HashMapDb {
         Err(SchoolErr::NotFound)
     }
 
-    fn get_all_teachers(&self) -> Vec<Arc<Mutex<Teacher>>> {
-        self.teachers.values().map(|x| Arc::clone(x)).collect()
+    fn get_all_teachers(&self) -> Result<Vec<Arc<Mutex<Teacher>>>, SchoolErr> {
+        Ok(self.teachers.values().map(|x| Arc::clone(x)).collect())
     }
 
     fn contains_teacher(&self, name: &str) -> bool {
         self.teachers.contains_key(name)
     }
 
-    fn insert_student(&mut self, student: Student) {
+    fn insert_student(&mut self, student: Student) -> Result<(), SchoolErr> {
         self.students.entry(student.name().to_string()).or_insert(Arc::new(Mutex::new(student.clone())));
+        Ok(())
     }
 
     fn get_student_by_name(&self, name: &str) -> Result<Arc<Mutex<Student>>, SchoolErr> {
@@ -57,20 +58,21 @@ impl Db for HashMapDb {
         Err(SchoolErr::NotFound)
     }
 
-    fn get_all_students(&self) -> Vec<Arc<Mutex<Student>>> {
-        self.students.values().map(|x| Arc::clone(x)).collect()
+    fn get_all_students(&self) -> Result<Vec<Arc<Mutex<Student>>>, SchoolErr> {
+        Ok(self.students.values().map(|x| Arc::clone(x)).collect())
     }
 
     fn contains_student(&self, name: &str) -> bool {
         self.students.contains_key(name)
     }
 
-    fn get_all_classes(&self) -> Vec<Arc<Mutex<Class>>> {
-        self.classes.values().map(|x| Arc::clone(x)).collect()
+    fn get_all_classes(&self) -> Result<Vec<Arc<Mutex<Class>>>, SchoolErr> {
+        Ok(self.classes.values().map(|x| Arc::clone(x)).collect())
     }
 
-    fn insert_class(&mut self, class: Class) {
+    fn insert_class(&mut self, class: Class) -> Result<(), SchoolErr> {
         self.classes.entry(class.name().to_string()).or_insert(Arc::new(Mutex::new(class.clone())));
+        Ok(())
     }
 }
 
@@ -107,16 +109,16 @@ pub trait Db {
         self.insert_student(hui_hui.lock().unwrap().to_owned());
         self.insert_student(qing_qing.lock().unwrap().to_owned());
     }
-    fn insert_teacher(&mut self, teacher: Teacher);
+    fn insert_teacher(&mut self, teacher: Teacher) -> Result<(), SchoolErr>;
     fn get_teacher_by_name(&self, name: &str) -> Result<Arc<Mutex<Teacher>>, SchoolErr>;
-    fn get_all_teachers(&self) -> Vec<Arc<Mutex<Teacher>>>;
+    fn get_all_teachers(&self) -> Result<Vec<Arc<Mutex<Teacher>>>, SchoolErr>;
     fn contains_teacher(&self, name: &str) -> bool;
-    fn insert_student(&mut self, student: Student);
+    fn insert_student(&mut self, student: Student) -> Result<(), SchoolErr>;
     fn get_student_by_name(&self, name: &str) -> Result<Arc<Mutex<Student>>, SchoolErr>;
-    fn get_all_students(&self) -> Vec<Arc<Mutex<Student>>>;
+    fn get_all_students(&self) -> Result<Vec<Arc<Mutex<Student>>>, SchoolErr>;
     fn contains_student(&self, name: &str) -> bool;
-    fn get_all_classes(&self) -> Vec<Arc<Mutex<Class>>>;
-    fn insert_class(&mut self, class: Class);
+    fn get_all_classes(&self) -> Result<Vec<Arc<Mutex<Class>>>, SchoolErr>;
+    fn insert_class(&mut self, class: Class) -> Result<(), SchoolErr>;
 }
 
 
@@ -138,19 +140,20 @@ const CLASS: &str = "class";
 
 
 impl Db for RedisDb {
-    fn insert_teacher(&mut self, teacher: Teacher) {
-        let _: RedisResult<()> = self.client.client.get_connection().unwrap()
-            .hset(TEACHER, teacher.name(), serde_json::to_string(&teacher).unwrap());
+    fn insert_teacher(&mut self, teacher: Teacher) -> Result<(), SchoolErr> {
+        self.client.client.get_connection()?
+            .hset(TEACHER, teacher.name(), serde_json::to_string(&teacher)?)?;
+        Ok(())
     }
 
     fn get_teacher_by_name(&self, name: &str) -> Result<Arc<Mutex<Teacher>>, SchoolErr> {
-        let teacher: String = self.client.client.get_connection().unwrap().hget(TEACHER, name)?;
+        let teacher: String = self.client.client.get_connection()?.hget(TEACHER, name)?;
         Ok(Arc::new(Mutex::new(serde_json::from_str(teacher.as_str()).unwrap())))
     }
 
-    fn get_all_teachers(&self) -> Vec<Arc<Mutex<Teacher>>> {
-        let teachers: HashMap<String, String> = self.client.client.get_connection().unwrap().hgetall(TEACHER).unwrap();
-        teachers.iter().map(|(k, v)| Arc::new(Mutex::new(serde_json::from_str(v).unwrap()))).collect()
+    fn get_all_teachers(&self) -> Result<Vec<Arc<Mutex<Teacher>>>, SchoolErr> {
+        let teachers: HashMap<String, String> = self.client.client.get_connection()?.hgetall(TEACHER)?;
+        Ok(teachers.iter().map(|(k, v)| Arc::new(Mutex::new(serde_json::from_str(v).unwrap()))).collect())
     }
 
     fn contains_teacher(&self, name: &str) -> bool {
@@ -161,19 +164,20 @@ impl Db for RedisDb {
         false
     }
 
-    fn insert_student(&mut self, student: Student) {
-        let _: RedisResult<()> = self.client.client.get_connection().unwrap()
-            .hset(STUDENT, student.name(), serde_json::to_string(&student).unwrap());
+    fn insert_student(&mut self, student: Student) -> Result<(), SchoolErr> {
+        self.client.client.get_connection()?
+            .hset(STUDENT, student.name(), serde_json::to_string(&student)?)?;
+        Ok(())
     }
 
     fn get_student_by_name(&self, name: &str) -> Result<Arc<Mutex<Student>>, SchoolErr> {
-        let redis_string: String = self.client.client.get_connection().unwrap().hget(STUDENT, name)?;
+        let redis_string: String = self.client.client.get_connection()?.hget(STUDENT, name)?;
         Ok(Arc::new(Mutex::new(serde_json::from_str(redis_string.as_str()).unwrap())))
     }
 
-    fn get_all_students(&self) -> Vec<Arc<Mutex<Student>>> {
-        let students: HashMap<String, String> = self.client.client.get_connection().unwrap().hgetall(STUDENT).unwrap();
-        students.iter().map(|(k, v)| Arc::new(Mutex::new(serde_json::from_str(v).unwrap()))).collect()
+    fn get_all_students(&self) -> Result<Vec<Arc<Mutex<Student>>>, SchoolErr> {
+        let students: HashMap<String, String> = self.client.client.get_connection()?.hgetall(STUDENT)?;
+        Ok(students.iter().map(|(k, v)| Arc::new(Mutex::new(serde_json::from_str(v).unwrap()))).collect())
     }
 
     fn contains_student(&self, name: &str) -> bool {
@@ -184,16 +188,17 @@ impl Db for RedisDb {
         false
     }
 
-    fn get_all_classes(&self) -> Vec<Arc<Mutex<Class>>> {
-        let classes: HashMap<String, String> = self.client.client.get_connection().unwrap().hgetall(CLASS).unwrap();
+    fn get_all_classes(&self) -> Result<Vec<Arc<Mutex<Class>>>, SchoolErr> {
+        let classes: HashMap<String, String> = self.client.client.get_connection()?.hgetall(CLASS).unwrap();
         let classes: Vec<ClassRedisPo> = classes.iter().map(|(k, v)| serde_json::from_str(v).unwrap()).collect();
-        classes.iter().map(|x| Arc::new(Mutex::new(self.class_redis_po_2_class(x).unwrap()))).collect()
+        Ok(classes.iter().map(|x| Arc::new(Mutex::new(self.class_redis_po_2_class(x).unwrap()))).collect())
     }
 
-    fn insert_class(&mut self, class: Class) {
+    fn insert_class(&mut self, class: Class) -> Result<(), SchoolErr> {
         let class_redis_po = ClassRedisPo::from(class);
-        let _: RedisResult<()> = self.client.client.get_connection().unwrap()
-            .hset(CLASS, class_redis_po.name(), serde_json::to_string(&class_redis_po).unwrap());
+        self.client.client.get_connection()?
+            .hset(CLASS, class_redis_po.name(), serde_json::to_string(&class_redis_po)?)?;
+        Ok(())
     }
 }
 
