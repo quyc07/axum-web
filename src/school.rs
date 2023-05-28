@@ -6,20 +6,20 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone)]
 pub struct Class<> {
     pub(crate) name: String,
-    teacher: Arc<Mutex<Teacher>>,
-    students: Vec<Arc<Mutex<Student>>>,
+    pub(crate) teacher: Arc<Mutex<Teacher>>,
+    pub(crate) students: Vec<Arc<Mutex<Student>>>,
 }
 
 #[derive(Deserialize, Serialize, Clone)]
 pub struct Student {
-    pub(crate) name: String,
+    name: String,
     gender: Gender,
     age: u8,
 }
 
 #[derive(Deserialize, Serialize, Clone)]
 pub struct Teacher {
-    pub(crate) name: String,
+    name: String,
     gender: Gender,
     age: u8,
 }
