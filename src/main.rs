@@ -24,6 +24,8 @@ type DbState = Arc<RwLock<AppState>>;
 
 #[tokio::main]
 async fn main() {
+    // 注意，env_logger 必须尽可能早的初始化
+    env_logger::init();
     let db_state = Arc::new(RwLock::new(AppState::default()));
     db_state.write().unwrap().db.init();
     let student_route = Router::new()

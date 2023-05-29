@@ -1,4 +1,5 @@
 use axum::http::StatusCode;
+use log::{error, log};
 use redis::RedisError;
 use crate::err::SchoolErr::{NotFound, RedisErr};
 
@@ -11,14 +12,14 @@ pub enum SchoolErr {
 
 impl From<RedisError> for SchoolErr {
     fn from(err: RedisError) -> Self {
-        eprintln!("redis error: {}", err);
+        error!("redis error: {}", err);
         RedisErr(err)
     }
 }
 
 impl From<SchoolErr> for StatusCode {
     fn from(err: SchoolErr) -> Self {
-        eprintln!("school error: {:?}", err);
+        error!("school error: {:?}", err);
         return match err {
             RedisErr(_) => StatusCode::INTERNAL_SERVER_ERROR,
             SchoolErr::SerdeJsonErr(_) => StatusCode::INTERNAL_SERVER_ERROR,
@@ -29,7 +30,7 @@ impl From<SchoolErr> for StatusCode {
 
 impl From<serde_json::Error> for SchoolErr {
     fn from(err: serde_json::Error) -> Self {
-        eprintln!("serde_json error: {}", err);
+        error!("serde_json error: {}", err);
         SchoolErr::SerdeJsonErr(err)
     }
 }
