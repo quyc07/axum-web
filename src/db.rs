@@ -242,7 +242,7 @@ pub struct Client {
 impl Client {
     fn new() -> Client {
         // connect to redis
-        let client = redis::Client::open("redis://127.0.0.1/").unwrap();
+        let client = redis::Client::open(("redis", 6379)).unwrap();
         Client { client }
     }
 }
