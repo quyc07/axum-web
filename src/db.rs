@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::string::ToString;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex,RwLock};
 
 use redis::{Commands, RedisResult};
 use serde::{Deserialize, Serialize};
@@ -244,5 +244,34 @@ impl Client {
         // connect to redis
         let client = redis::Client::open(("127.0.0.1", 6379)).unwrap();
         Client { client }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+    use redis::Commands;
+
+    #[test]
+    fn test_class_redis_po_from_class() {
+        let teacher = Arc::new(Mutex::new(Teacher::new("John".to_string(),Gender::MALE, 30)));
+
+        let student1 = Arc::new(Mutex::new(Student::new("Alice".to_string(), Gender::FEMALE, 18)));
+        let student2 = Arc::new(Mutex::new(Student::new("Bob".to_string(),Gender::MALE, 19)));
+        let class = Class::new("Math".to_owned(), teacher.clone(), vec![student1.clone(), student2.clone()]);
+        let class_redis_po = ClassRedisPo::from(class);
+        assert_eq!(class_redis_po.name, "Math");
+        assert_eq!(class_redis_po.teacher_name, "John");
+        assert_eq!(class_redis_po.students_name, vec!["Alice", "Bob"]);
+    }
+
+    #[test]
+    fn test_client_new() {
+        let client = Client::new();
+        let mut conn = client.client.get_connection().unwrap();
+        let _: () = conn.set("test_key", "test_value").unwrap();
+        let value: String = conn.get("test_key").unwrap();
+        assert_eq!(value, "test_value");
     }
 }

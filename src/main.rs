@@ -16,17 +16,17 @@ mod redis_db;
 mod err;
 
 #[derive(Default)]
-struct AppState {
-    db: RedisDb,
+struct AppState<T: Db> {
+    db: T,
 }
 
-type DbState = Arc<RwLock<AppState>>;
+type DbState = Arc<RwLock<AppState<RedisDb>>>;
 
 #[tokio::main]
 async fn main() {
     // 注意，env_logger 必须尽可能早的初始化
     env_logger::init();
-    let db_state = Arc::new(RwLock::new(AppState::default()));
+    let db_state = Arc::new(RwLock::new(AppState::<RedisDb>::default()));
     db_state.write().unwrap().db.init();
     let student_route = Router::new()
         .route("/student", post(create_student))
