@@ -7,13 +7,14 @@ use axum::http::StatusCode;
 use axum::routing::{get, post};
 use serde::{Deserialize, Serialize};
 
-use crate::db::{Db, HashMapDb, RedisDb};
+use crate::db::Db;
+use crate::db::hashmap_db::HashMapDb;
+use crate::db::redis_db::RedisDb;
 use crate::school::{Class, Student, Teacher};
 
 mod school;
-mod db;
-mod redis_db;
 mod err;
+mod db;
 
 #[derive(Default)]
 struct AppState<T: Db> {
