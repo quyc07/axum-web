@@ -5,6 +5,7 @@ use crate::school::{Class, Gender, Student, Teacher};
 
 pub mod hashmap_db;
 pub mod redis_db;
+pub mod mysql_db;
 
 pub trait Db {
     fn init(&mut self) {

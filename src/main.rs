@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::db::Db;
 use crate::db::hashmap_db::HashMapDb;
+use crate::db::mysql_db::MysqlDb;
 use crate::db::redis_db::RedisDb;
 use crate::school::{Class, Student, Teacher};
 
@@ -16,18 +17,26 @@ mod school;
 mod err;
 mod db;
 
-#[derive(Default)]
-struct AppState<T: Db> {
-    db: T,
+// #[derive(Default)]
+struct AppState {
+    db: MysqlDb,
 }
 
-type DbState = Arc<RwLock<AppState<RedisDb>>>;
+impl AppState {
+    async fn new() -> AppState {
+        AppState {
+            db: MysqlDb::new().await.unwrap()
+        }
+    }
+}
+
+type DbState = Arc<RwLock<AppState>>;
 
 #[tokio::main]
 async fn main() {
     // 注意，env_logger 必须尽可能早的初始化
     env_logger::init();
-    let db_state = Arc::new(RwLock::new(AppState::<RedisDb>::default()));
+    let db_state = Arc::new(RwLock::new(AppState::new().await));
     db_state.write().unwrap().db.init();
     let student_route = Router::new()
         .route("/student", post(create_student))
