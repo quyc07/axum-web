@@ -7,6 +7,7 @@ use crate::err::SchoolErr::{NotFound, RedisErr};
 pub enum SchoolErr {
     RedisErr(RedisError),
     SerdeJsonErr(serde_json::Error),
+    MysqlErr(mysql::Error),
     NotFound,
 }
 
@@ -23,6 +24,7 @@ impl From<SchoolErr> for StatusCode {
         return match err {
             RedisErr(_) => StatusCode::INTERNAL_SERVER_ERROR,
             SchoolErr::SerdeJsonErr(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            SchoolErr::MysqlErr(_) => StatusCode::INTERNAL_SERVER_ERROR,
             NotFound => StatusCode::NOT_FOUND,
         };
     }
@@ -32,5 +34,12 @@ impl From<serde_json::Error> for SchoolErr {
     fn from(err: serde_json::Error) -> Self {
         error!("serde_json error: {}", err);
         SchoolErr::SerdeJsonErr(err)
+    }
+}
+
+impl From<mysql::Error> for SchoolErr {
+    fn from(error: mysql::Error) -> Self {
+        error!("mysql error:{}",error);
+        SchoolErr::MysqlErr(error)
     }
 }

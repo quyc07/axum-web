@@ -88,11 +88,9 @@ impl Db for RedisDb {
 
 impl RedisDb {
     fn class_redis_po_2_class(&self, x: &ClassRedisPo) -> Result<Class, SchoolErr> {
-        Ok(Class {
-            name: x.name().to_string(),
-            teacher: self.get_teacher_by_name(x.teacher_name.as_str())?,
-            students: x.students_name.iter().map(|s| self.get_student_by_name(s).unwrap()).collect(),
-        })
+        Ok(Class::new(x.name().to_string(),
+                      self.get_teacher_by_name(x.teacher_name.as_str())?,
+                      x.students_name.iter().map(|s| self.get_student_by_name(s).unwrap()).collect()))
     }
 }
 
@@ -140,10 +138,10 @@ mod tests {
 
     #[test]
     fn test_class_redis_po_from_class() {
-        let teacher = Arc::new(Mutex::new(Teacher::new("John".to_string(),Gender::MALE, 30)));
+        let teacher = Arc::new(Mutex::new(Teacher::new("John".to_string(), Gender::MALE, 30)));
 
         let student1 = Arc::new(Mutex::new(Student::new("Alice".to_string(), Gender::FEMALE, 18)));
-        let student2 = Arc::new(Mutex::new(Student::new("Bob".to_string(),Gender::MALE, 19)));
+        let student2 = Arc::new(Mutex::new(Student::new("Bob".to_string(), Gender::MALE, 19)));
         let class = Class::new("Math".to_owned(), teacher.clone(), vec![student1.clone(), student2.clone()]);
         let class_redis_po = ClassRedisPo::from(class);
         assert_eq!(class_redis_po.name, "Math");

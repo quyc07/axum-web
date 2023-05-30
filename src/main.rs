@@ -17,26 +17,18 @@ mod school;
 mod err;
 mod db;
 
-// #[derive(Default)]
-struct AppState {
-    db: MysqlDb,
+#[derive(Default)]
+struct AppState<T> {
+    db: T,
 }
 
-impl AppState {
-    async fn new() -> AppState {
-        AppState {
-            db: MysqlDb::new().await.unwrap()
-        }
-    }
-}
-
-type DbState = Arc<RwLock<AppState>>;
+type DbState = Arc<RwLock<AppState<MysqlDb>>>;
 
 #[tokio::main]
 async fn main() {
     // 注意，env_logger 必须尽可能早的初始化
     env_logger::init();
-    let db_state = Arc::new(RwLock::new(AppState::new().await));
+    let db_state = Arc::new(RwLock::new(AppState::<MysqlDb>::default()));
     db_state.write().unwrap().db.init();
     let student_route = Router::new()
         .route("/student", post(create_student))

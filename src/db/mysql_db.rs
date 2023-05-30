@@ -1,21 +1,24 @@
+use std::collections::HashMap;
+use std::ops::Index;
 use std::sync::{Arc, Mutex};
-use sqlx::{ConnectOptions, Error, MySql, Pool};
-use sqlx::mysql::{MySqlConnectOptions, MySqlPoolOptions};
+use mysql::{Column, FromRowError, Params, params, Pool, Row, Value};
+use mysql::prelude::{FromRow, Queryable, ToValue};
 use tokio::fs::read_to_string;
+use crate::classes;
 use crate::db::Db;
 use crate::err::SchoolErr;
 use crate::school::{Class, Student, Teacher};
 
 pub struct MysqlDb {
-    pool: Pool<MySql>,
+    pool: Pool,
 }
 
-impl MysqlDb {
-    pub(crate) async fn new() -> Result<MysqlDb, Error> {
-        Ok(MysqlDb {
-            pool: MySqlPoolOptions::new().max_connections(5).connect_with(MySqlConnectOptions::new()
-                .host("127.0.0.1").username("root").password("abc123").database("mydb")).await?
-        })
+impl Default for MysqlDb {
+    fn default() -> Self {
+        let url = "mysql://root:abc123@localhost:3306/mydb";
+        MysqlDb {
+            pool: Pool::new(url).unwrap()
+        }
     }
 }
 
@@ -57,6 +60,14 @@ impl Db for MysqlDb {
     }
 
     fn insert_class(&mut self, class: Class) -> Result<(), SchoolErr> {
-        todo!()
+        let mut conn = self.pool.get_conn()?;
+        let x1 = class.students().iter().map(|x| x.lock().unwrap().name()).interspace(",").collect::<String>();
+        conn.exec_drop(r"insert into class(name,teacher,students) values(:name,:teacher,:students)", params! {
+            "name"=>class.name(),
+            "teacher"=>class.teacher().lock().unwrap().name(),
+            "students"=>class.students().iter().map(|x| x.lock().unwrap().name()).intersperse(",").collect::<String>(),
+        })?;
+        // println!("{classes}");
+        Ok(())
     }
 }

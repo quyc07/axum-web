@@ -2,12 +2,11 @@ use std::sync::{Arc, Mutex};
 
 use serde::{Deserialize, Serialize};
 
-
 #[derive(Clone)]
 pub struct Class<> {
-    pub(crate) name: String,
-    pub(crate) teacher: Arc<Mutex<Teacher>>,
-    pub(crate) students: Vec<Arc<Mutex<Student>>>,
+    name: String,
+    teacher: Arc<Mutex<Teacher>>,
+    students: Vec<Arc<Mutex<Student>>>,
 }
 
 #[derive(Deserialize, Serialize, Clone)]

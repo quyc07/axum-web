@@ -28,17 +28,17 @@ pub trait Db {
         self.insert_class(class2);
         self.insert_class(class3);
         self.insert_class(class4);
-        self.insert_teacher(zhang_san.lock().unwrap().to_owned());
-        self.insert_teacher(wang_wu.lock().unwrap().to_owned());
-        self.insert_teacher(li_si.lock().unwrap().to_owned());
-        self.insert_student(ming_ming.lock().unwrap().to_owned());
-        self.insert_student(fang_fang.lock().unwrap().to_owned());
-        self.insert_student(xiao_hong.lock().unwrap().to_owned());
-        self.insert_student(xiao_bai.lock().unwrap().to_owned());
-        self.insert_student(wang_hai.lock().unwrap().to_owned());
-        self.insert_student(ling_ling.lock().unwrap().to_owned());
-        self.insert_student(hui_hui.lock().unwrap().to_owned());
-        self.insert_student(qing_qing.lock().unwrap().to_owned());
+        // self.insert_teacher(zhang_san.lock().unwrap().to_owned());
+        // self.insert_teacher(wang_wu.lock().unwrap().to_owned());
+        // self.insert_teacher(li_si.lock().unwrap().to_owned());
+        // self.insert_student(ming_ming.lock().unwrap().to_owned());
+        // self.insert_student(fang_fang.lock().unwrap().to_owned());
+        // self.insert_student(xiao_hong.lock().unwrap().to_owned());
+        // self.insert_student(xiao_bai.lock().unwrap().to_owned());
+        // self.insert_student(wang_hai.lock().unwrap().to_owned());
+        // self.insert_student(ling_ling.lock().unwrap().to_owned());
+        // self.insert_student(hui_hui.lock().unwrap().to_owned());
+        // self.insert_student(qing_qing.lock().unwrap().to_owned());
     }
     fn insert_teacher(&mut self, teacher: Teacher) -> Result<(), SchoolErr>;
     fn get_teacher_by_name(&self, name: &str) -> Result<Arc<Mutex<Teacher>>, SchoolErr>;
