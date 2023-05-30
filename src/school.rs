@@ -29,6 +29,15 @@ pub enum Gender {
     FEMALE,
 }
 
+impl Gender {
+    pub fn name(&self) -> String {
+        match self {
+            Gender::MALE => "Male".to_string(),
+            Gender::FEMALE => "Female".to_string(),
+        }
+    }
+}
+
 impl Class {
     pub(crate) fn new(name: String, teacher: Arc<Mutex<Teacher>>, students: Vec<Arc<Mutex<Student>>>) -> Class {
         Class {
