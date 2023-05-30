@@ -13,7 +13,7 @@ pub struct MysqlDb {
 
 impl Default for MysqlDb {
     fn default() -> Self {
-        let url = "mysql://root:abc123@localhost:3306/mydb";
+        let url = "mysql://root:abc123@mysql:3306/mydb";
         MysqlDb {
             pool: Pool::new(url).unwrap()
         }
