@@ -21,7 +21,7 @@ impl Default for MysqlDb {
 impl MysqlDb {
     fn new() -> Result<Self, Error> {
         let builder = OptsBuilder::new()
-            .ip_or_hostname(Some("127.0.0.1"))
+            .ip_or_hostname(Some("mysql"))
             .user(Some("root"))
             .pass(Some("abc123"))
             .db_name(Some("mydb"))
