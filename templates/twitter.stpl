@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Twitter Clone</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f2f2f2;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .tweet {
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .tweet .author {
+            font-weight: bold;
+        }
+        .tweet .timestamp {
+            font-size: 12px;
+            color: #999;
+        }
+        .tweet .content {
+            margin-top: 10px;
+        }
+        .tweet .actions {
+            margin-top: 10px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .tweet .actions button {
+            background-color: #fff;
+            border: none;
+            cursor: pointer;
+        }
+        .tweet .actions button:hover {
+            background-color: #f2f2f2;
+        }
+        .tweet .actions button:focus {
+            outline: none;
+        }
+        .tweet .actions button i {
+            font-size: 16px;
+            color: #999;
+        }
+        .tweet .actions button i:hover {
+            color: #333;
+        }
+        .tweet .actions button.like i {
+            color: #ff69b4;
+        }
+        .tweet .actions button.retweet i {
+            color: #1da1f2;
+        }
+        .tweet .actions button.reply i {
+            color: #1da1f2;
+        }
+        .tweet .actions button.delete i {
+            color: #ff0000;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="tweet">
+            <div class="author">John Doe</div>
+            <div class="timestamp">2 hours ago</div>
+            <div class="content">This is my first tweet!</div>
+            <div class="actions">
+                <button class="like"><i class="fas fa-heart"></i> 10</button>
+                <button class="retweet"><i class="fas fa-retweet"></i> 5</button>
+                <button class="reply"><i class="fas fa-reply"></i> Reply</button>
+                <button class="delete"><i class="fas fa-trash"></i> Delete</button>
+            </div>
+        </div>
+        <div class="tweet">
+            <div class="author">Jane Doe</div>
+            <div class="timestamp">1 day ago</div>
+            <div class="content">I love Twitter!</div>
+            <div class="actions">
+                <button class="like"><i class="fas fa-heart"></i> 20</button>
+                <button class="retweet"><i class="fas fa-retweet"></i> 10</button>
+                <button class="reply"><i class="fas fa-reply"></i> Reply</button>
+                <button class="delete"><i class="fas fa-trash"></i> Delete</button>
+            </div>
+        </div>
+    </div>
+    <script src="https://kit.fontawesome.com/your-key.js" crossorigin="anonymous"></script>
+</body>
+</html>

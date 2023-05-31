@@ -14,7 +14,7 @@ use crate::db::hashmap_db::HashMapDb;
 use crate::db::mysql_db::MysqlDb;
 use crate::db::redis_db::RedisDb;
 use crate::school::{Class, Student, Teacher};
-use crate::templates::stpl_template::{ChinaTemplate, HelloTemplate};
+use crate::templates::stpl_template::{CommonTemplate, HelloTemplate};
 
 mod school;
 mod err;
@@ -49,7 +49,7 @@ async fn main() {
         .merge(teacher_router)
         .route("/", get(index))
         .route("/classes", get(classes))
-        .route("/china",get(china))
+        .route("/common",get(common))
         // 共享状态既可以是method_router级别，也可以是Router级别，Router级别所有的method_router都可以共享
         .with_state(Arc::clone(&db_state));
 
@@ -123,8 +123,8 @@ async fn students_template(State(db_state): State<DbState>) -> Result<Html<Strin
     Ok(Html(template.render_once().unwrap()))
 }
 
-async fn china() -> Html<String> {
-    Html(ChinaTemplate {}.render_once().unwrap())
+async fn common() -> Html<String> {
+    Html(CommonTemplate {}.render_once().unwrap())
 }
 
 #[derive(Deserialize, Serialize, Clone)]

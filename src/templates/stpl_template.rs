@@ -22,5 +22,5 @@ impl Render for Gender {
 }
 
 #[derive(TemplateOnce)]
-#[template(path = "china.stpl")]
-pub struct ChinaTemplate {}
+#[template(path = "twitter.stpl")]
+pub struct CommonTemplate {}
