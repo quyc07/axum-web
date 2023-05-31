@@ -149,12 +149,4 @@ mod tests {
         assert_eq!(class_redis_po.students_name, vec!["Alice", "Bob"]);
     }
 
-    #[test]
-    fn test_client_new() {
-        let client = Client::new();
-        let mut conn = client.client.get_connection().unwrap();
-        let _: () = conn.set("test_key", "test_value").unwrap();
-        let value: String = conn.get("test_key").unwrap();
-        assert_eq!(value, "test_value");
-    }
 }

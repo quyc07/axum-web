@@ -1,6 +1,7 @@
 use std::sync::{Arc, Mutex};
+use std::time::Duration;
 
-use mysql::{Error, FromValueError, params, Pool, Row, Value};
+use mysql::{Error, FromValueError, params, Pool, Row, Value, OptsBuilder, PoolOpts, Conn, Opts, PoolConstraints};
 use mysql::prelude::{FromValue, Queryable};
 
 use crate::db::Db;
@@ -13,10 +14,22 @@ pub struct MysqlDb {
 
 impl Default for MysqlDb {
     fn default() -> Self {
-        let url = "mysql://root:abc123@mysql:3306/mydb";
-        MysqlDb {
-            pool: Pool::new(url).unwrap()
-        }
+        MysqlDb::new().unwrap()
+    }
+}
+
+impl MysqlDb {
+    fn new() -> Result<Self, Error> {
+        let builder = OptsBuilder::new()
+            .ip_or_hostname(Some("127.0.0.1"))
+            .user(Some("root"))
+            .pass(Some("abc123"))
+            .db_name(Some("mydb"))
+            .tcp_connect_timeout(Some(std::time::Duration::from_secs(5)))// 设置连接超时时间为 5 秒
+            .read_timeout(Some(Duration::from_secs(10)))// 读取数据超时时间
+            .pool_opts(PoolOpts::new().with_constraints(PoolConstraints::new(5, 10).unwrap()))// 连接池设置
+            ;
+        Ok(MysqlDb { pool: Pool::new(builder)? })
     }
 }
 
