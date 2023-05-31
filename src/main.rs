@@ -4,7 +4,9 @@ use std::sync::{Arc, RwLock};
 use axum::{Json, Router};
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
+use axum::response::Html;
 use axum::routing::{get, post};
+use sailfish::TemplateOnce;
 use serde::{Deserialize, Serialize};
 
 use crate::db::Db;
@@ -12,10 +14,12 @@ use crate::db::hashmap_db::HashMapDb;
 use crate::db::mysql_db::MysqlDb;
 use crate::db::redis_db::RedisDb;
 use crate::school::{Class, Student, Teacher};
+use crate::templates::hello_template::HelloTemplate;
 
 mod school;
 mod err;
 mod db;
+mod templates;
 
 #[derive(Default)]
 struct AppState<T> {
@@ -34,7 +38,8 @@ async fn main() {
         .route("/student", post(create_student))
         .route("/student/:name", get(student))
         .route("/students", get(students))
-        .route("/student/update", post(update_student));
+        .route("/student/update", post(update_student))
+        .route("/students/template", get(students_template));
     let teacher_router = Router::new()
         .route("/teacher", post(create_teacher))
         .route("/teacher/:name", get(teacher))
@@ -107,6 +112,14 @@ async fn update_student(State(db_state): State<DbState>, Json(student): Json<Stu
 async fn classes(State(db_state): State<DbState>) -> Result<Json<Vec<ClassVo>>, StatusCode> {
     Ok(Json(db_state.read().unwrap().db.get_all_classes()?
         .iter().map(|x| ClassVo::from(x.lock().unwrap().to_owned())).collect()))
+}
+
+async fn students_template(State(db_state): State<DbState>) -> Result<Html<String>, StatusCode> {
+    let students: Vec<Student> = db_state.read().unwrap().db.get_all_students()?
+        .iter().map(|x| x.lock().unwrap().clone())
+        .collect();
+    let template = HelloTemplate { students };
+    Ok(Html(template.render_once().unwrap()))
 }
 
 #[derive(Deserialize, Serialize, Clone)]
