@@ -16,4 +16,16 @@ log = "0.4"
 env_logger = "0.10.0"
 mysql = "24.0.0"
 askama = "0.12.0"
+tonic = "0.9"
+prost = "0.11"
 
+[[bin]] # Bin to run the HelloWorld gRPC server
+name = "helloworld-server"
+path = "src/server.rs"
+
+[[bin]] # Bin to run the HelloWorld gRPC client
+name = "helloworld-client"
+path = "src/client.rs"
+
+[build-dependencies]
+tonic-build = "0.9"
