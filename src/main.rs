@@ -1,12 +1,12 @@
 use std::net::SocketAddr;
 use std::sync::{Arc, RwLock};
+use askama::Template;
 
 use axum::{Json, Router};
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::response::Html;
 use axum::routing::{get, post};
-use sailfish::TemplateOnce;
 use serde::{Deserialize, Serialize};
 
 use crate::db::Db;
@@ -14,7 +14,7 @@ use crate::db::hashmap_db::HashMapDb;
 use crate::db::mysql_db::MysqlDb;
 use crate::db::redis_db::RedisDb;
 use crate::school::{Class, Student, Teacher};
-use crate::templates::stpl_template::{CommonTemplate, HelloTemplate};
+use crate::templates::askama_template::HelloTemplate;
 
 mod school;
 mod err;
@@ -49,7 +49,7 @@ async fn main() {
         .merge(teacher_router)
         .route("/", get(index))
         .route("/classes", get(classes))
-        .route("/common",get(common))
+        .route("/common", get(common))
         // 共享状态既可以是method_router级别，也可以是Router级别，Router级别所有的method_router都可以共享
         .with_state(Arc::clone(&db_state));
 
@@ -120,11 +120,11 @@ async fn students_template(State(db_state): State<DbState>) -> Result<Html<Strin
         .iter().map(|x| x.lock().unwrap().clone())
         .collect();
     let template = HelloTemplate { students };
-    Ok(Html(template.render_once().unwrap()))
+    Ok(Html(template.render().unwrap()))
 }
 
 async fn common() -> Html<String> {
-    Html(CommonTemplate {}.render_once().unwrap())
+    Html(templates::askama_template::CommonTemplate{}.render().unwrap())
 }
 
 #[derive(Deserialize, Serialize, Clone)]

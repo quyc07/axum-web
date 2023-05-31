@@ -15,5 +15,5 @@ tower = { version = "0.4", features = ["util", "timeout", "load-shed", "limit"] 
 log = "0.4"
 env_logger = "0.10.0"
 mysql = "24.0.0"
-sailfish = "0.6.0"
+askama = "0.12.0"
 

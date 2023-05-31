@@ -1,1 +1,1 @@
-pub mod stpl_template;
+pub mod askama_template;
