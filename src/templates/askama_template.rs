@@ -4,7 +4,7 @@ use crate::school::{Gender, Student};
 
 #[derive(Template)]
 #[template(path="twitter.html")]
-pub struct CommonTemplate{}
+pub struct TwitterTemplate {}
 
 #[derive(Template)]
 #[template(path = "hello.html")]
