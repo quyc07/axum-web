@@ -20,3 +20,7 @@ impl Render for Gender {
         Ok(())
     }
 }
+
+#[derive(TemplateOnce)]
+#[template(path = "china.stpl")]
+pub struct ChinaTemplate {}

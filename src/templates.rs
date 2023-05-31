@@ -1,1 +1,1 @@
-pub mod hello_template;
+pub mod stpl_template;
