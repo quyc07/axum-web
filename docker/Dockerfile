@@ -9,8 +9,8 @@ COPY . /app
 
 # Build the Rust application
 RUN cargo build
-RUN sudo apt update && sudo apt upgrade -y
 RUN sudo apt install -y protobuf-compiler libprotobuf-dev
+RUN sudo apt update && sudo apt upgrade -y
 
 # Expose port 8000 for the application
 EXPOSE 3000
