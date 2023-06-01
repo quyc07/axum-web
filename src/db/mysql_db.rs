@@ -109,7 +109,18 @@ impl Db for MysqlDb {
     }
 
     fn get_all_classes(&self) -> Result<Vec<Arc<Mutex<Class>>>, SchoolErr> {
-        todo!()
+        let mut conn = self.pool.get_conn().unwrap();
+        let result: Result<Vec<Row>, Error> = conn.query("select * from class");
+        if let Ok(vec) = result {
+            return Ok(vec.iter().map(|x|
+                Arc::new(Mutex::new(Class::new(
+                    x.get(0).unwrap(),
+                    self.get_teacher_by_name(x.get::<String, usize>(1).unwrap().as_str()).unwrap(),
+                    x.get::<String, usize>(2).unwrap().split(",").map(|x|
+                        self.get_student_by_name(x).unwrap()).collect::<Vec<Arc<Mutex<Student>>>>(),
+                )))).collect());
+        }
+        Err(SchoolErr::NotFound)
     }
 
     fn insert_class(&mut self, class: Class) -> Result<(), SchoolErr> {
