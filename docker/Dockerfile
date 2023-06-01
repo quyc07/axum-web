@@ -8,8 +8,7 @@ WORKDIR /app
 COPY . /app
 
 # Build the Rust application
-RUN sudo apt update && sudo apt upgrade -y
-RUN sudo apt install -y protobuf-compiler libprotobuf-dev
+RUN apt-get update && apt-get install -y protobuf-compiler
 RUN cargo build
 
 # Expose port 8000 for the application
