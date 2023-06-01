@@ -41,7 +41,7 @@ async fn main() {
 }
 
 async fn start_rpc_server() {
-    let addr = "[::1]:50051".parse().unwrap();
+    let addr = "0.0.0.0:50051".parse().unwrap();
     let greeter = MyGreeter::default();
 
     Server::builder()
