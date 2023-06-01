@@ -8,31 +8,51 @@ use axum::http::StatusCode;
 use axum::response::Html;
 use axum::routing::{get, post};
 use serde::{Deserialize, Serialize};
+use tonic::transport::Server;
 
 use crate::db::Db;
 use crate::db::hashmap_db::HashMapDb;
 use crate::db::mysql_db::MysqlDb;
 use crate::db::redis_db::RedisDb;
 use crate::school::{Class, Student, Teacher};
+use crate::server::hello_world::greeter_server::GreeterServer;
+use crate::server::MyGreeter;
 use crate::templates::askama_template::{HelloTemplate, TwitterTemplate};
 
 mod school;
 mod err;
 mod db;
 mod templates;
+mod server;
 
 #[derive(Default)]
 struct AppState<T> {
     db: T,
 }
 
-type DbState = Arc<RwLock<AppState<MysqlDb>>>;
 
 #[tokio::main]
 async fn main() {
     // 注意，env_logger 必须尽可能早的初始化
     env_logger::init();
-    let db_state = Arc::new(RwLock::new(AppState::<MysqlDb>::default()));
+    start_web_server().await;
+    start_rpc_server().await;
+}
+
+async fn start_rpc_server() {
+    let addr = "0.0.0.0:50051".parse().unwrap();
+    let greeter = MyGreeter::default();
+
+    Server::builder()
+        .add_service(GreeterServer::new(greeter))
+        .serve(addr)
+        .await.unwrap();
+}
+
+type DbState = Arc<RwLock<AppState<HashMapDb>>>;
+
+async fn start_web_server() {
+    let db_state = Arc::new(RwLock::new(AppState::<HashMapDb>::default()));
     db_state.write().unwrap().db.init();
     let student_route = Router::new()
         .route("/student", post(create_student))
