@@ -1,7 +1,7 @@
+use crate::err::SchoolErr::{NotFound, RedisErr};
 use axum::http::StatusCode;
 use log::{error, log};
 use redis::RedisError;
-use crate::err::SchoolErr::{NotFound, RedisErr};
 
 #[derive(Debug)]
 pub enum SchoolErr {
@@ -39,7 +39,7 @@ impl From<serde_json::Error> for SchoolErr {
 
 impl From<mysql::Error> for SchoolErr {
     fn from(error: mysql::Error) -> Self {
-        error!("mysql error:{}",error);
+        error!("mysql error:{}", error);
         SchoolErr::MysqlErr(error)
     }
 }

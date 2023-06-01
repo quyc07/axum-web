@@ -25,7 +25,9 @@ impl HashMapDb {
 
 impl Db for HashMapDb {
     fn insert_teacher(&mut self, teacher: Teacher) -> Result<(), SchoolErr> {
-        self.teachers.entry(teacher.name().to_string()).or_insert(Arc::new(Mutex::new(teacher.clone())));
+        self.teachers
+            .entry(teacher.name().to_string())
+            .or_insert(Arc::new(Mutex::new(teacher.clone())));
         Ok(())
     }
 
@@ -45,7 +47,9 @@ impl Db for HashMapDb {
     }
 
     fn insert_student(&mut self, student: Student) -> Result<(), SchoolErr> {
-        self.students.entry(student.name().to_string()).or_insert(Arc::new(Mutex::new(student.clone())));
+        self.students
+            .entry(student.name().to_string())
+            .or_insert(Arc::new(Mutex::new(student.clone())));
         Ok(())
     }
 
@@ -69,10 +73,9 @@ impl Db for HashMapDb {
     }
 
     fn insert_class(&mut self, class: Class) -> Result<(), SchoolErr> {
-        self.classes.entry(class.name().to_string()).or_insert(Arc::new(Mutex::new(class.clone())));
+        self.classes
+            .entry(class.name().to_string())
+            .or_insert(Arc::new(Mutex::new(class.clone())));
         Ok(())
     }
 }
-
-
-

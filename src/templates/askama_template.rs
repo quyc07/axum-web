@@ -1,9 +1,9 @@
-use std::fmt::{Debug, Display, Formatter, Write};
-use askama::Template;
 use crate::school::{Gender, Student};
+use askama::Template;
+use std::fmt::{Debug, Display, Formatter, Write};
 
 #[derive(Template)]
-#[template(path="twitter.html")]
+#[template(path = "twitter.html")]
 pub struct TwitterTemplate {}
 
 #[derive(Template)]
@@ -13,7 +13,7 @@ pub struct HelloTemplate {
     pub(crate) students: Vec<Student>,
 }
 
-impl Display for Gender{
+impl Display for Gender {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_str(self.name().as_str())
     }

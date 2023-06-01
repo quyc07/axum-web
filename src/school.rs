@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone)]
-pub struct Class<> {
+pub struct Class {
     name: String,
     teacher: Arc<Mutex<Teacher>>,
     students: Vec<Arc<Mutex<Student>>>,
@@ -39,7 +39,11 @@ impl Gender {
 }
 
 impl Class {
-    pub(crate) fn new(name: String, teacher: Arc<Mutex<Teacher>>, students: Vec<Arc<Mutex<Student>>>) -> Class {
+    pub(crate) fn new(
+        name: String,
+        teacher: Arc<Mutex<Teacher>>,
+        students: Vec<Arc<Mutex<Student>>>,
+    ) -> Class {
         Class {
             name,
             teacher,
@@ -60,11 +64,7 @@ impl Class {
 
 impl Teacher {
     pub fn new(name: String, gender: Gender, age: u8) -> Teacher {
-        Teacher {
-            name,
-            gender,
-            age,
-        }
+        Teacher { name, gender, age }
     }
     pub fn name(&self) -> &str {
         self.name.as_str()
@@ -79,11 +79,7 @@ impl Teacher {
 
 impl Student {
     pub(crate) fn new(name: String, gender: Gender, age: u8) -> Student {
-        Student {
-            name,
-            gender,
-            age,
-        }
+        Student { name, gender, age }
     }
     pub fn name(&self) -> &str {
         self.name.as_str()

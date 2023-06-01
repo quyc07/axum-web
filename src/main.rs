@@ -1,52 +1,54 @@
+use askama::Template;
 use std::net::SocketAddr;
 use std::sync::{Arc, RwLock};
-use askama::Template;
 
-use axum::{Json, Router};
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::response::Html;
 use axum::routing::{get, post};
+use axum::{Json, Router};
 use serde::{Deserialize, Serialize};
+use tokio::join;
 use tonic::transport::Server;
 
-use crate::db::Db;
 use crate::db::hashmap_db::HashMapDb;
 use crate::db::mysql_db::MysqlDb;
 use crate::db::redis_db::RedisDb;
+use crate::db::Db;
 use crate::school::{Class, Student, Teacher};
 use crate::server::hello_world::greeter_server::GreeterServer;
 use crate::server::MyGreeter;
 use crate::templates::askama_template::{HelloTemplate, TwitterTemplate};
 
-mod school;
-mod err;
 mod db;
-mod templates;
+mod err;
+mod school;
 mod server;
+mod templates;
 
 #[derive(Default)]
 struct AppState<T> {
     db: T,
 }
 
-
 #[tokio::main]
 async fn main() {
     // 注意，env_logger 必须尽可能早的初始化
     env_logger::init();
-    start_web_server().await;
-    start_rpc_server().await;
+    let rpc_server = start_rpc_server();
+    let web_server = start_web_server();
+    join!(rpc_server, web_server);
 }
 
 async fn start_rpc_server() {
-    let addr = "0.0.0.0:50051".parse().unwrap();
+    let addr = "[::1]:50051".parse().unwrap();
     let greeter = MyGreeter::default();
 
     Server::builder()
         .add_service(GreeterServer::new(greeter))
         .serve(addr)
-        .await.unwrap();
+        .await
+        .unwrap();
 }
 
 type DbState = Arc<RwLock<AppState<HashMapDb>>>;
@@ -73,7 +75,6 @@ async fn start_web_server() {
         // 共享状态既可以是method_router级别，也可以是Router级别，Router级别所有的method_router都可以共享
         .with_state(Arc::clone(&db_state));
 
-
     let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
@@ -82,7 +83,10 @@ async fn start_web_server() {
 }
 
 /// 最后一个参数才是body
-async fn create_teacher(State(db_state): State<DbState>, Json(teacher): Json<Teacher>) -> Result<Json<Teacher>, StatusCode> {
+async fn create_teacher(
+    State(db_state): State<DbState>,
+    Json(teacher): Json<Teacher>,
+) -> Result<Json<Teacher>, StatusCode> {
     let mut guard = db_state.write().unwrap();
     if guard.db.contains_teacher(teacher.name()) {
         return Err(StatusCode::CONFLICT);
@@ -91,16 +95,30 @@ async fn create_teacher(State(db_state): State<DbState>, Json(teacher): Json<Tea
     Ok(Json(teacher))
 }
 
-async fn teacher(Path(name): Path<String>, State(shared_state): State<DbState>) -> Result<Json<Teacher>, StatusCode> {
-    Ok(Json(shared_state.read().unwrap().db.get_teacher_by_name(name.as_str())?.lock().unwrap().clone()))
+async fn teacher(
+    Path(name): Path<String>,
+    State(shared_state): State<DbState>,
+) -> Result<Json<Teacher>, StatusCode> {
+    Ok(Json(
+        shared_state
+            .read()
+            .unwrap()
+            .db
+            .get_teacher_by_name(name.as_str())?
+            .lock()
+            .unwrap()
+            .clone(),
+    ))
 }
-
 
 async fn index() -> &'static str {
     "Welcome to 八七小学!"
 }
 
-async fn create_student(State(db_state): State<DbState>, Json(student): Json<Student>) -> Result<Json<Student>, StatusCode> {
+async fn create_student(
+    State(db_state): State<DbState>,
+    Json(student): Json<Student>,
+) -> Result<Json<Student>, StatusCode> {
     let mut guard = db_state.write().unwrap();
     if guard.db.contains_student(student.name()) {
         return Err(StatusCode::CONFLICT);
@@ -109,19 +127,52 @@ async fn create_student(State(db_state): State<DbState>, Json(student): Json<Stu
     Ok(Json(student))
 }
 
-async fn student(Path(name): Path<String>, State(shared_state): State<DbState>) -> Result<Json<Student>, StatusCode> {
-    Ok(Json(shared_state.read().unwrap().db.get_student_by_name(name.as_str())?.lock().unwrap().clone()))
+async fn student(
+    Path(name): Path<String>,
+    State(shared_state): State<DbState>,
+) -> Result<Json<Student>, StatusCode> {
+    Ok(Json(
+        shared_state
+            .read()
+            .unwrap()
+            .db
+            .get_student_by_name(name.as_str())?
+            .lock()
+            .unwrap()
+            .clone(),
+    ))
 }
 
 async fn teachers(State(db_state): State<DbState>) -> Result<Json<Vec<Teacher>>, StatusCode> {
-    Ok(Json(db_state.read().unwrap().db.get_all_teachers()?.iter().map(|x| x.lock().unwrap().clone()).collect()))
+    Ok(Json(
+        db_state
+            .read()
+            .unwrap()
+            .db
+            .get_all_teachers()?
+            .iter()
+            .map(|x| x.lock().unwrap().clone())
+            .collect(),
+    ))
 }
 
 async fn students(State(db_state): State<DbState>) -> Result<Json<Vec<Student>>, StatusCode> {
-    Ok(Json(db_state.read().unwrap().db.get_all_students()?.iter().map(|x| x.lock().unwrap().clone()).collect()))
+    Ok(Json(
+        db_state
+            .read()
+            .unwrap()
+            .db
+            .get_all_students()?
+            .iter()
+            .map(|x| x.lock().unwrap().clone())
+            .collect(),
+    ))
 }
 
-async fn update_student(State(db_state): State<DbState>, Json(student): Json<Student>) -> Result<Json<Student>, StatusCode> {
+async fn update_student(
+    State(db_state): State<DbState>,
+    Json(student): Json<Student>,
+) -> Result<Json<Student>, StatusCode> {
     let mut db_state = db_state.write().unwrap();
     if db_state.db.contains_student(student.name()) {
         db_state.db.insert_student(student.clone())?;
@@ -131,13 +182,26 @@ async fn update_student(State(db_state): State<DbState>, Json(student): Json<Stu
 }
 
 async fn classes(State(db_state): State<DbState>) -> Result<Json<Vec<ClassVo>>, StatusCode> {
-    Ok(Json(db_state.read().unwrap().db.get_all_classes()?
-        .iter().map(|x| ClassVo::from(x.lock().unwrap().to_owned())).collect()))
+    Ok(Json(
+        db_state
+            .read()
+            .unwrap()
+            .db
+            .get_all_classes()?
+            .iter()
+            .map(|x| ClassVo::from(x.lock().unwrap().to_owned()))
+            .collect(),
+    ))
 }
 
 async fn students_template(State(db_state): State<DbState>) -> Result<Html<String>, StatusCode> {
-    let students: Vec<Student> = db_state.read().unwrap().db.get_all_students()?
-        .iter().map(|x| x.lock().unwrap().clone())
+    let students: Vec<Student> = db_state
+        .read()
+        .unwrap()
+        .db
+        .get_all_students()?
+        .iter()
+        .map(|x| x.lock().unwrap().clone())
         .collect();
     let template = HelloTemplate { students };
     Ok(Html(template.render().unwrap()))
@@ -159,7 +223,11 @@ impl From<Class> for ClassVo {
         ClassVo {
             name: class.name().to_string(),
             teacher: class.teacher().lock().unwrap().clone(),
-            students: class.students().iter().map(|x| x.lock().unwrap().clone()).collect(),
+            students: class
+                .students()
+                .iter()
+                .map(|x| x.lock().unwrap().clone())
+                .collect(),
         }
     }
 }
