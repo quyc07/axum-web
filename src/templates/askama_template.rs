@@ -10,7 +10,7 @@ pub struct TwitterTemplate {}
 #[template(path = "hello.html")]
 pub struct HelloTemplate {
     // data to be passed to the template
-    pub(crate) students: Vec<Student>,
+    pub students: Vec<Student>,
 }
 
 impl Display for Gender {

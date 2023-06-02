@@ -3,7 +3,7 @@ package school_proto;
 
 service SchoolService {
     rpc GetTeacherByName (TeacherByNameRequest) returns (TeacherResponse);
-
+    rpc GetStudentByName (StudentByNameRequest) returns (StudentResponse);
 }
 
 message TeacherByNameRequest {
@@ -16,4 +16,14 @@ message TeacherResponse {
     int32 age = 3;
 }
 
+message StudentByNameRequest {
+    string name = 1;
+}
+
+// 生成 StudentResponse
+message StudentResponse{
+    string name = 1;
+    string gender = 2;
+    int32 age = 3;
+}
 

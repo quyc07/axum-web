@@ -1,14 +1,19 @@
-use std::sync::{Arc, Mutex};
-
-use tonic::transport::Server;
-use tonic::{async_trait, Request, Response, Status};
+pub mod school_proto;
 
 use crate::db::hashmap_db::HashMapDb;
 use crate::db::Db;
 use crate::err::SchoolErr;
-use crate::school::Teacher;
-use crate::school_proto::school_service_server::SchoolService;
-use crate::school_proto::{TeacherByNameRequest, TeacherResponse};
+use crate::school::Student;
+use crate::school_server::school_proto::school_service_server::SchoolService;
+use crate::school_server::school_proto::{
+    StudentByNameRequest, StudentResponse, TeacherByNameRequest, TeacherResponse,
+};
+use std::sync::{Arc, Mutex};
+use tonic::{Request, Response, Status};
+
+// mod school_proto {
+//     tonic::include_proto!("school_proto");
+// }
 
 pub struct SchoolServiceHashMapDb {
     db: HashMapDb,
@@ -39,6 +44,24 @@ impl SchoolService for SchoolServiceHashMapDb {
                 }))
             }
             Err(_) => return Err(Status::not_found("Teacher not found")),
+        }
+    }
+
+    async fn get_student_by_name(
+        &self,
+        request: Request<StudentByNameRequest>,
+    ) -> Result<Response<StudentResponse>, Status> {
+        let student = request.into_inner();
+        match self.db.get_student_by_name(&student.name) {
+            Ok(student) => {
+                let student = student.lock().unwrap();
+                Ok(Response::new(StudentResponse {
+                    name: student.name().to_string(),
+                    gender: student.gender().name(),
+                    age: student.age() as i32,
+                }))
+            }
+            Err(_) => Err(Status::not_found("Student not found")),
         }
     }
 }
