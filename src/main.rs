@@ -2,22 +2,26 @@ use std::net::SocketAddr;
 use std::sync::{Arc, RwLock};
 
 use askama::Template;
-use axum::{Json, Router};
 use axum::extract::{Path, State};
+use axum::handler::Handler;
 use axum::http::StatusCode;
 use axum::response::Html;
 use axum::routing::{get, post};
+use axum::{Json, Router};
 use serde::{Deserialize, Serialize};
 use tokio::join;
-use tonic::transport::Server;
+use tonic::transport::{Channel, Server};
 
-use axum_web::db::Db;
 use axum_web::db::hashmap_db::HashMapDb;
 use axum_web::db::mysql_db::MysqlDb;
 use axum_web::db::redis_db::RedisDb;
-use axum_web::school::{Class, Student, Teacher};
-use axum_web::school_server::school_proto::school_service_server::{SchoolService, SchoolServiceServer};
-use axum_web::school_server::SchoolServiceHashMapDb;
+use axum_web::db::Db;
+use axum_web::school::{Class, Gender, Student, Teacher};
+use axum_web::school_proto;
+use axum_web::school_proto::school_service_client::SchoolServiceClient;
+use axum_web::school_proto::StudentByNameRequest;
+// use axum_web::school_server::school_proto::school_service_server::{SchoolService, SchoolServiceServer};
+// use axum_web::school_server::SchoolServiceHashMapDb;
 use axum_web::templates::askama_template::{HelloTemplate, TwitterTemplate};
 
 #[derive(Default)]
@@ -29,30 +33,27 @@ struct AppState<T> {
 async fn main() {
     // 注意，env_logger 必须尽可能早的初始化
     env_logger::init();
-    let school_server = start_school_rpc_server();
     let web_server = start_web_server();
-    join!(school_server, web_server);
-}
-
-async fn start_school_rpc_server() {
-    let addr = "0.0.0.0:10000".parse().unwrap();
-    let school_service = SchoolServiceHashMapDb::default();
-
-    Server::builder()
-        .add_service(SchoolServiceServer::new(school_service))
-        .serve(addr)
-        .await
-        .unwrap();
+    join!(web_server);
 }
 
 type DbState = Arc<RwLock<AppState<HashMapDb>>>;
+type ClientState = Arc<RwLock<SchoolServiceClient<Channel>>>;
 
 async fn start_web_server() {
+    let mut client = SchoolServiceClient::connect("http://127.0.0.1:10000")
+        .await
+        .unwrap();
     let db_state = Arc::new(RwLock::new(AppState::<HashMapDb>::default()));
+    let client_state = Arc::new(RwLock::new(client));
+
     db_state.write().unwrap().db.init();
     let student_route = Router::new()
         .route("/student", post(create_student))
-        .route("/student/:name", get(student))
+        .route(
+            "/student/:name",
+            get(student).with_state(Arc::clone(&client_state)),
+        )
         .route("/students", get(students))
         .route("/student/update", post(update_student))
         .route("/students/template", get(students_template));
@@ -123,18 +124,16 @@ async fn create_student(
 
 async fn student(
     Path(name): Path<String>,
-    State(shared_state): State<DbState>,
+    State(client_state): State<ClientState>,
 ) -> Result<Json<Student>, StatusCode> {
-    Ok(Json(
-        shared_state
-            .read()
-            .unwrap()
-            .db
-            .get_student_by_name(name.as_str())?
-            .lock()
-            .unwrap()
-            .clone(),
-    ))
+    let mut client = client_state.write().unwrap();
+    let request = tonic::Request::new(StudentByNameRequest { name: name.clone() });
+    let response = client.get_student_by_name(request).await.unwrap();
+    Ok(Json(Student::new(
+        response.get_ref().name.clone(),
+        Gender::from(response.get_ref().gender.clone()),
+        response.get_ref().age as u8,
+    )))
 }
 
 async fn teachers(State(db_state): State<DbState>) -> Result<Json<Vec<Teacher>>, StatusCode> {

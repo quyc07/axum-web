@@ -1,19 +1,17 @@
-pub mod school_proto;
+use tonic::{Request, Response, Status};
+use tonic::transport::Server;
 
-use crate::db::hashmap_db::HashMapDb;
-use crate::db::Db;
-use crate::err::SchoolErr;
-use crate::school::Student;
-use crate::school_server::school_proto::school_service_server::SchoolService;
-use crate::school_server::school_proto::{
+use axum_web::db::Db;
+use axum_web::db::hashmap_db::HashMapDb;
+
+use crate::school_proto::{
     StudentByNameRequest, StudentResponse, TeacherByNameRequest, TeacherResponse,
 };
-use std::sync::{Arc, Mutex};
-use tonic::{Request, Response, Status};
+use crate::school_proto::school_service_server::{SchoolService, SchoolServiceServer};
 
-// mod school_proto {
-//     tonic::include_proto!("school_proto");
-// }
+pub mod school_proto {
+    tonic::include_proto!("school_proto");
+}
 
 pub struct SchoolServiceHashMapDb {
     db: HashMapDb,
@@ -66,4 +64,14 @@ impl SchoolService for SchoolServiceHashMapDb {
     }
 }
 
-fn main() {}
+#[tokio::main]
+async fn main() {
+    let addr = "0.0.0.0:10000".parse().unwrap();
+    let school_service = SchoolServiceHashMapDb::default();
+
+    Server::builder()
+        .add_service(SchoolServiceServer::new(school_service))
+        .serve(addr)
+        .await
+        .unwrap();
+}

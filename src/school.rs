@@ -78,7 +78,7 @@ impl Teacher {
 }
 
 impl Student {
-    pub(crate) fn new(name: String, gender: Gender, age: u8) -> Student {
+    pub fn new(name: String, gender: Gender, age: u8) -> Student {
         Student { name, gender, age }
     }
     pub fn name(&self) -> &str {
