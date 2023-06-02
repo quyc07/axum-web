@@ -1,0 +1,19 @@
+syntax="proto3";
+package school_proto;
+
+service SchoolService {
+    rpc GetTeacherByName (TeacherByNameRequest) returns (TeacherResponse);
+
+}
+
+message TeacherByNameRequest {
+    string name = 1;
+}
+
+message TeacherResponse {
+    string name = 1;
+    string gender = 2;
+    int32 age = 3;
+}
+
+

@@ -29,3 +29,7 @@ prost = "0.11"
 
 [build-dependencies]
 tonic-build = "0.9"
+
+[[bin]]
+name="school-server"
+path= "src/school_server.rs"

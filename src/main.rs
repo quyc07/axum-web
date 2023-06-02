@@ -25,6 +25,7 @@ mod err;
 mod school;
 mod server;
 mod templates;
+mod school_server;
 
 #[derive(Default)]
 struct AppState<T> {
