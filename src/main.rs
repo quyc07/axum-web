@@ -16,9 +16,11 @@ use crate::db::mysql_db::MysqlDb;
 use crate::db::redis_db::RedisDb;
 use crate::db::Db;
 use crate::school::{Class, Student, Teacher};
+use crate::school_server::SchoolServiceHashMapDb;
 use crate::server::hello_world::greeter_server::GreeterServer;
 use crate::server::MyGreeter;
 use crate::templates::askama_template::{HelloTemplate, TwitterTemplate};
+use crate::school_proto::school_service_server::{SchoolService, SchoolServiceServer};
 
 mod db;
 mod err;
@@ -26,6 +28,7 @@ mod school;
 mod server;
 mod templates;
 mod school_server;
+mod school_proto;
 
 #[derive(Default)]
 struct AppState<T> {
@@ -37,8 +40,9 @@ async fn main() {
     // 注意，env_logger 必须尽可能早的初始化
     env_logger::init();
     let rpc_server = start_rpc_server();
+    let school_server = start_school_rpc_server();
     let web_server = start_web_server();
-    join!(rpc_server, web_server);
+    join!(school_server,rpc_server, web_server);
 }
 
 async fn start_rpc_server() {
@@ -47,6 +51,17 @@ async fn start_rpc_server() {
 
     Server::builder()
         .add_service(GreeterServer::new(greeter))
+        .serve(addr)
+        .await
+        .unwrap();
+}
+
+async fn start_school_rpc_server() {
+    let addr = "0.0.0.0:10000".parse().unwrap();
+    let school_service = SchoolServiceHashMapDb::default();
+
+    Server::builder()
+        .add_service(SchoolServiceServer::new(school_service))
         .serve(addr)
         .await
         .unwrap();

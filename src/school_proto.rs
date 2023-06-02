@@ -26,20 +26,20 @@ pub mod school_service_client {
     impl SchoolServiceClient<tonic::transport::Channel> {
         /// Attempt to create a new client by connecting to a given endpoint.
         pub async fn connect<D>(dst: D) -> Result<Self, tonic::transport::Error>
-        where
-            D: TryInto<tonic::transport::Endpoint>,
-            D::Error: Into<StdError>,
+            where
+                D: TryInto<tonic::transport::Endpoint>,
+                D::Error: Into<StdError>,
         {
             let conn = tonic::transport::Endpoint::new(dst)?.connect().await?;
             Ok(Self::new(conn))
         }
     }
     impl<T> SchoolServiceClient<T>
-    where
-        T: tonic::client::GrpcService<tonic::body::BoxBody>,
-        T::Error: Into<StdError>,
-        T::ResponseBody: Body<Data = Bytes> + Send + 'static,
-        <T::ResponseBody as Body>::Error: Into<StdError> + Send,
+        where
+            T: tonic::client::GrpcService<tonic::body::BoxBody>,
+            T::Error: Into<StdError>,
+            T::ResponseBody: Body<Data = Bytes> + Send + 'static,
+            <T::ResponseBody as Body>::Error: Into<StdError> + Send,
     {
         pub fn new(inner: T) -> Self {
             let inner = tonic::client::Grpc::new(inner);
@@ -53,18 +53,18 @@ pub mod school_service_client {
             inner: T,
             interceptor: F,
         ) -> SchoolServiceClient<InterceptedService<T, F>>
-        where
-            F: tonic::service::Interceptor,
-            T::ResponseBody: Default,
-            T: tonic::codegen::Service<
-                http::Request<tonic::body::BoxBody>,
-                Response = http::Response<
-                    <T as tonic::client::GrpcService<tonic::body::BoxBody>>::ResponseBody,
+            where
+                F: tonic::service::Interceptor,
+                T::ResponseBody: Default,
+                T: tonic::codegen::Service<
+                    http::Request<tonic::body::BoxBody>,
+                    Response = http::Response<
+                        <T as tonic::client::GrpcService<tonic::body::BoxBody>>::ResponseBody,
+                    >,
                 >,
-            >,
-            <T as tonic::codegen::Service<
-                http::Request<tonic::body::BoxBody>,
-            >>::Error: Into<StdError> + Send + Sync,
+                <T as tonic::codegen::Service<
+                    http::Request<tonic::body::BoxBody>,
+                >>::Error: Into<StdError> + Send + Sync,
         {
             SchoolServiceClient::new(InterceptedService::new(inner, interceptor))
         }
@@ -167,8 +167,8 @@ pub mod school_service_server {
             inner: T,
             interceptor: F,
         ) -> InterceptedService<Self, F>
-        where
-            F: tonic::service::Interceptor,
+            where
+                F: tonic::service::Interceptor,
         {
             InterceptedService::new(Self::new(inner), interceptor)
         }
@@ -202,10 +202,10 @@ pub mod school_service_server {
         }
     }
     impl<T, B> tonic::codegen::Service<http::Request<B>> for SchoolServiceServer<T>
-    where
-        T: SchoolService,
-        B: Body + Send + 'static,
-        B::Error: Into<StdError> + Send + 'static,
+        where
+            T: SchoolService,
+            B: Body + Send + 'static,
+            B::Error: Into<StdError> + Send + 'static,
     {
         type Response = http::Response<tonic::body::BoxBody>;
         type Error = std::convert::Infallible;
