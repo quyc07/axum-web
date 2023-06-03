@@ -2,31 +2,33 @@ use std::net::SocketAddr;
 use std::sync::{Arc, RwLock};
 
 use askama::Template;
+use axum::{Json, Router};
 use axum::extract::{Path, State};
-use axum::handler::Handler;
 use axum::http::StatusCode;
 use axum::response::Html;
 use axum::routing::{get, post};
-use axum::{Json, Router};
 use serde::{Deserialize, Serialize};
 use tokio::join;
-use tonic::transport::{Channel, Server};
+use tonic::transport::Channel;
 
+use axum_web::db::Db;
 use axum_web::db::hashmap_db::HashMapDb;
 use axum_web::db::mysql_db::MysqlDb;
 use axum_web::db::redis_db::RedisDb;
-use axum_web::db::Db;
 use axum_web::school::{Class, Gender, Student, Teacher};
-use axum_web::school_proto;
 use axum_web::school_proto::school_service_client::SchoolServiceClient;
 use axum_web::school_proto::StudentByNameRequest;
-// use axum_web::school_server::school_proto::school_service_server::{SchoolService, SchoolServiceServer};
-// use axum_web::school_server::SchoolServiceHashMapDb;
 use axum_web::templates::askama_template::{HelloTemplate, TwitterTemplate};
 
-#[derive(Default)]
 struct AppState<T> {
     db: T,
+    client: SchoolServiceClient<Channel>,
+}
+
+impl<T> AppState<T> {
+    fn new(db: T, client: SchoolServiceClient<Channel>) -> Self {
+        Self { db, client }
+    }
 }
 
 #[tokio::main]
@@ -38,22 +40,18 @@ async fn main() {
 }
 
 type DbState = Arc<RwLock<AppState<HashMapDb>>>;
-type ClientState = Arc<RwLock<SchoolServiceClient<Channel>>>;
+// type ClientState = Arc<RwLock<SchoolServiceClient<Channel>>>;
 
 async fn start_web_server() {
-    let mut client = SchoolServiceClient::connect("http://127.0.0.1:10000")
+    let client = SchoolServiceClient::connect("http://127.0.0.1:10000")
         .await
         .unwrap();
-    let db_state = Arc::new(RwLock::new(AppState::<HashMapDb>::default()));
-    let client_state = Arc::new(RwLock::new(client));
+    let db_state = Arc::new(RwLock::new(AppState::new(HashMapDb::new(), client)));
 
     db_state.write().unwrap().db.init();
     let student_route = Router::new()
         .route("/student", post(create_student))
-        .route(
-            "/student/:name",
-            get(student).with_state(Arc::clone(&client_state)),
-        )
+        .route("/student/:name", get(student))
         .route("/students", get(students))
         .route("/student/update", post(update_student))
         .route("/students/template", get(students_template));
@@ -122,18 +120,22 @@ async fn create_student(
     Ok(Json(student))
 }
 
+#[axum_macros::debug_handler]
 async fn student(
+    State(db_state): State<DbState>,
     Path(name): Path<String>,
-    State(client_state): State<ClientState>,
 ) -> Result<Json<Student>, StatusCode> {
-    let mut client = client_state.write().unwrap();
     let request = tonic::Request::new(StudentByNameRequest { name: name.clone() });
+    let mut client = db_state.write().unwrap().client.clone();
     let response = client.get_student_by_name(request).await.unwrap();
-    Ok(Json(Student::new(
-        response.get_ref().name.clone(),
-        Gender::from(response.get_ref().gender.clone()),
-        response.get_ref().age as u8,
-    )))
+    Ok(Json(
+        Student::new(
+            response.get_ref().name.clone(),
+            Gender::from(response.get_ref().gender.clone()),
+            response.get_ref().age as u8,
+        )
+        .clone(),
+    ))
 }
 
 async fn teachers(State(db_state): State<DbState>) -> Result<Json<Vec<Teacher>>, StatusCode> {
