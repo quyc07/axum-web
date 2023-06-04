@@ -2,12 +2,14 @@ use crate::err::SchoolErr::{NotFound, RedisErr};
 use axum::http::StatusCode;
 use log::{error, log};
 use redis::RedisError;
+use sea_orm::DbErr;
 
 #[derive(Debug)]
 pub enum SchoolErr {
     RedisErr(RedisError),
     SerdeJsonErr(serde_json::Error),
     MysqlErr(mysql::Error),
+    SeaErr(DbErr),
     NotFound,
 }
 
@@ -25,6 +27,7 @@ impl From<SchoolErr> for StatusCode {
             RedisErr(_) => StatusCode::INTERNAL_SERVER_ERROR,
             SchoolErr::SerdeJsonErr(_) => StatusCode::INTERNAL_SERVER_ERROR,
             SchoolErr::MysqlErr(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            SchoolErr::SeaErr(_) => StatusCode::INTERNAL_SERVER_ERROR,
             NotFound => StatusCode::NOT_FOUND,
         };
     }
@@ -41,5 +44,12 @@ impl From<mysql::Error> for SchoolErr {
     fn from(error: mysql::Error) -> Self {
         error!("mysql error:{}", error);
         SchoolErr::MysqlErr(error)
+    }
+}
+
+impl From<DbErr> for SchoolErr {
+    fn from(value: DbErr) -> Self {
+        error!("sea error: {:?}", value);
+        SchoolErr::SeaErr(value)
     }
 }

@@ -5,4 +5,4 @@ pub mod prelude;
 pub mod class;
 pub mod student;
 pub mod teacher;
-mod sea_orm;
+pub mod sea_orm;

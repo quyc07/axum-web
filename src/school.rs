@@ -39,7 +39,7 @@ impl Gender {
 }
 
 impl Class {
-    pub(crate) fn new(
+    pub fn new(
         name: String,
         teacher: Arc<Mutex<Teacher>>,
         students: Vec<Arc<Mutex<Student>>>,
