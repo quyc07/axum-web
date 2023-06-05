@@ -53,7 +53,7 @@ type DbState = Arc<RwLock<AppState<HashMapDb>>>;
 // type ClientState = Arc<RwLock<SchoolServiceClient<Channel>>>;
 
 async fn start_web_server() {
-    let client = SchoolServiceClient::connect("http://localhost:10000")
+    let client = SchoolServiceClient::connect("http://school-server:10000")
         .await
         .unwrap();
     let db_state = Arc::new(RwLock::new(
