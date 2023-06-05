@@ -5,6 +5,7 @@ use sea_orm::{
     ActiveModelTrait, ColumnTrait, Database, DatabaseConnection, DbErr, EntityTrait, NotSet,
     QueryFilter,
 };
+use tokio::task::JoinHandle;
 
 use crate::async_db::AsyncDb;
 use crate::err::SchoolErr;
@@ -20,31 +21,31 @@ pub struct SeaOrm {
 impl SeaOrm {
     pub async fn new() -> Result<SeaOrm, DbErr> {
         let db: DatabaseConnection =
-            Database::connect("mysql://root:abc123@mysql/mydb").await?;
+            Database::connect("mysql://root:abc123@127.0.0.1/mydb").await?;
         Ok(SeaOrm { db })
     }
+}
 
-    async fn class_model_2_class(&self, class: class::Model) -> Arc<Mutex<Class>> {
-        let teacher = teacher::Entity::find()
-            .filter(teacher::Column::Name.eq(class.teacher.unwrap()))
-            .one(&self.db)
-            .await
-            .unwrap()
-            .unwrap();
-        let students = student::Entity::find()
-            .filter(student::Column::Name.eq(class.name.clone()))
-            .all(&self.db)
-            .await
-            .unwrap()
-            .into_iter()
-            .map(|x| Arc::new(Mutex::new(x.into())))
-            .collect();
-        Arc::new(Mutex::new(Class::new(
-            class.name.to_string(),
-            Arc::new(Mutex::new(teacher.into())),
-            students,
-        )))
-    }
+async fn class_model_2_class(class: class::Model, db: &DatabaseConnection) -> Arc<Mutex<Class>> {
+    let teacher = teacher::Entity::find()
+        .filter(teacher::Column::Name.eq(class.teacher.unwrap()))
+        .one(db)
+        .await
+        .unwrap()
+        .unwrap();
+    let students = student::Entity::find()
+        .filter(student::Column::Name.eq(class.name.clone()))
+        .all(db)
+        .await
+        .unwrap()
+        .into_iter()
+        .map(|x| Arc::new(Mutex::new(x.into())))
+        .collect();
+    Arc::new(Mutex::new(Class::new(
+        class.name.to_string(),
+        Arc::new(Mutex::new(teacher.into())),
+        students,
+    )))
 }
 
 #[tonic::async_trait]
@@ -134,14 +135,17 @@ impl AsyncDb for SeaOrm {
     }
 
     async fn get_all_classes(&self) -> Result<Vec<Arc<Mutex<Class>>>, SchoolErr> {
-        // Ok(class::Entity::find()
-        //     .all(&self.db)
-        //     .await
-        //     .unwrap()
-        //     .iter()
-        //     .map(|x| async { self.class_model_2_class(x.to_owned()).await })
-        //     .collect::<Vec<Arc<Mutex<Class>>>>())
-        todo!()
+        let db = &self.db;
+        let vec = class::Entity::find().all(db).await.unwrap();
+        let handles = vec
+            .iter()
+            .map(|x| tokio::spawn(async { class_model_2_class(x.to_owned(), db).await }))
+            .collect::<Vec<JoinHandle<Arc<Mutex<Class>>>>>();
+        let mut classes = vec![];
+        for x in handles {
+            classes.push(x.await.unwrap());
+        }
+        Ok(classes)
     }
 
     async fn insert_class(&mut self, class: Class) -> Result<(), SchoolErr> {
