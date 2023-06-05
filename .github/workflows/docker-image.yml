@@ -17,3 +17,9 @@ jobs:
         run: |
           echo ${{ secrets.DOCKERHUB_TOKEN }} | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
           docker push quyc07/axum-web:latest
+      - name: Build the school-server Docker image
+        run: docker build --file ./docker/school-server/Dockerfile . --tag quyc07/school-server:latest
+      - name: Push the school-server Docker image
+        run: |
+          echo ${{ secrets.DOCKERHUB_TOKEN }} | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
+          docker push quyc07/school-server:latest
