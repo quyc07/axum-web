@@ -134,13 +134,14 @@ impl AsyncDb for SeaOrm {
     }
 
     async fn get_all_classes(&self) -> Result<Vec<Arc<Mutex<Class>>>, SchoolErr> {
-        Ok(class::Entity::find()
-            .all(&self.db)
-            .await
-            .unwrap()
-            .iter()
-            .map(|x| async { self.class_model_2_class(x.to_owned()).await })
-            .collect::<Vec<Arc<Mutex<Class>>>>())
+        // Ok(class::Entity::find()
+        //     .all(&self.db)
+        //     .await
+        //     .unwrap()
+        //     .iter()
+        //     .map(|x| async { self.class_model_2_class(x.to_owned()).await })
+        //     .collect::<Vec<Arc<Mutex<Class>>>>())
+        todo!()
     }
 
     async fn insert_class(&mut self, class: Class) -> Result<(), SchoolErr> {
