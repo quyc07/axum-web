@@ -1,16 +1,16 @@
 use std::sync::{Arc, Mutex};
 
+use sea_orm::ActiveValue::Set;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, Database, DatabaseConnection, DbErr, EntityTrait, NotSet,
     QueryFilter,
 };
-use sea_orm::ActiveValue::Set;
 
 use crate::async_db::AsyncDb;
 use crate::err::SchoolErr;
 use crate::school::{Class, Gender, Student, Teacher};
 use crate::sea;
-use crate::sea::{student, teacher};
+use crate::sea::{class, student, teacher};
 
 #[derive(Clone)]
 pub struct SeaOrm {
@@ -23,11 +23,34 @@ impl SeaOrm {
             Database::connect("mysql://root:abc123@localhost/mydb").await?;
         Ok(SeaOrm { db })
     }
+
+    async fn class_model_2_class(&self, class: class::Model) -> Arc<Mutex<Class>> {
+        let teacher = teacher::Entity::find()
+            .filter(teacher::Column::Name.eq(class.teacher.unwrap()))
+            .one(&self.db)
+            .await
+            .unwrap()
+            .unwrap();
+        let students = student::Entity::find()
+            .filter(student::Column::Name.eq(class.name.clone()))
+            .all(&self.db)
+            .await
+            .unwrap()
+            .into_iter()
+            .map(|x| Arc::new(Mutex::new(x.into())))
+            .collect();
+        Arc::new(Mutex::new(Class::new(
+            class.name.to_string(),
+            Arc::new(Mutex::new(teacher.into())),
+            students,
+        )))
+    }
 }
 
 #[tonic::async_trait]
 impl AsyncDb for SeaOrm {
-    async fn insert_teacher(&mut self, teacher: teacher::Model) -> Result<Teacher, SchoolErr> {
+    async fn insert_teacher(&mut self, teacher: Teacher) -> Result<Teacher, SchoolErr> {
+        let teacher: teacher::Model = teacher::Model::from(teacher);
         let teacher_act = teacher::ActiveModel {
             id: NotSet,
             name: Set(teacher.name),
@@ -111,11 +134,25 @@ impl AsyncDb for SeaOrm {
     }
 
     async fn get_all_classes(&self) -> Result<Vec<Arc<Mutex<Class>>>, SchoolErr> {
-        todo!()
+        Ok(class::Entity::find()
+            .all(&self.db)
+            .await
+            .unwrap()
+            .iter()
+            .map(|x| async { self.class_model_2_class(x.to_owned()).await })
+            .collect::<Vec<Arc<Mutex<Class>>>>())
     }
 
     async fn insert_class(&mut self, class: Class) -> Result<(), SchoolErr> {
-        todo!()
+        let class = class::Model::from(class);
+        let class_act = class::ActiveModel {
+            id: NotSet,
+            name: Set(class.name),
+            teacher: Set(class.teacher),
+            students: Set(class.students),
+        };
+        class_act.insert(&self.db).await?;
+        Ok(())
     }
 }
 
@@ -157,5 +194,23 @@ impl From<student::Model> for Student {
             Gender::from(value.gender.unwrap()),
             value.age.unwrap() as u8,
         )
+    }
+}
+
+impl From<Class> for class::Model {
+    fn from(value: Class) -> Self {
+        class::Model {
+            id: Default::default(),
+            name: value.name().to_string(),
+            teacher: Some(value.teacher().lock().unwrap().name().to_string()),
+            students: Some(
+                value
+                    .students()
+                    .iter()
+                    .map(|x| x.lock().unwrap().name().to_string())
+                    .collect::<Vec<String>>()
+                    .join(","),
+            ),
+        }
     }
 }

@@ -54,9 +54,9 @@ pub trait AsyncDb {
         // self.insert_class(class2);
         // self.insert_class(class3);
         // self.insert_class(class4);
-        self.insert_teacher(Teacher::into(zhang_san));
-        self.insert_teacher(Teacher::into(wang_wu));
-        self.insert_teacher(Teacher::into(li_si));
+        self.insert_teacher(zhang_san);
+        self.insert_teacher(wang_wu);
+        self.insert_teacher(li_si);
         // self.insert_student(ming_ming.lock().unwrap().to_owned());
         // self.insert_student(fang_fang.lock().unwrap().to_owned());
         // self.insert_student(xiao_hong.lock().unwrap().to_owned());
@@ -66,7 +66,7 @@ pub trait AsyncDb {
         // self.insert_student(hui_hui.lock().unwrap().to_owned());
         // self.insert_student(qing_qing.lock().unwrap().to_owned());
     }
-    async fn insert_teacher(&mut self, teacher: teacher::Model) -> Result<(Teacher), SchoolErr>;
+    async fn insert_teacher(&mut self, teacher: Teacher) -> Result<Teacher, SchoolErr>;
     async fn get_teacher_by_name(&self, name: &str) -> Result<Arc<Mutex<Teacher>>, SchoolErr>;
     async fn get_all_teachers(&self) -> Result<Vec<Arc<Mutex<Teacher>>>, SchoolErr>;
     async fn contains_teacher(&self, name: &str) -> bool;
