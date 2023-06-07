@@ -1,3 +1,4 @@
+use axum::extract::FromRef;
 use std::sync::{Arc, Mutex};
 
 use sea_orm::ActiveValue::Set;
@@ -135,11 +136,16 @@ impl AsyncDb for SeaOrm {
     }
 
     async fn get_all_classes(&self) -> Result<Vec<Arc<Mutex<Class>>>, SchoolErr> {
-        let db = &self.db;
-        let vec = class::Entity::find().all(db).await.unwrap();
-        let handles = vec
-            .iter()
-            .map(|x| tokio::spawn(async { class_model_2_class(x.to_owned(), db).await }))
+        let db = Arc::new(DatabaseConnection::from_ref(&self.db));
+        let vec = class::Entity::find().all(&*db).await.unwrap();
+        let vec_db = (0..vec.len())
+            .into_iter()
+            .map(|x| Arc::clone(&db))
+            .collect::<Vec<Arc<DatabaseConnection>>>();
+        let class_2_db = vec.into_iter().zip(vec_db.into_iter());
+        let handles = class_2_db
+            .into_iter()
+            .map(|x| tokio::task::spawn(async move { class_model_2_class(x.0, &x.1).await }))
             .collect::<Vec<JoinHandle<Arc<Mutex<Class>>>>>();
         let mut classes = vec![];
         for x in handles {
