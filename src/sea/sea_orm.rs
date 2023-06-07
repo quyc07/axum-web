@@ -34,8 +34,10 @@ async fn class_model_2_class(class: class::Model, db: &DatabaseConnection) -> Ar
         .await
         .unwrap()
         .unwrap();
+    let students_name = class.students.unwrap();
+    // let students_name = students_name.split(",").collect::<Vec<&str>>();
     let students = student::Entity::find()
-        .filter(student::Column::Name.eq(class.name.clone()))
+        .filter(student::Column::Name.is_in(students_name.split(",")))
         .all(db)
         .await
         .unwrap()
@@ -137,12 +139,16 @@ impl AsyncDb for SeaOrm {
 
     async fn get_all_classes(&self) -> Result<Vec<Arc<Mutex<Class>>>, SchoolErr> {
         let db = Arc::new(DatabaseConnection::from_ref(&self.db));
-        let vec = class::Entity::find().all(&*db).await.unwrap();
-        let vec_db = (0..vec.len())
+        // 查询所有班级
+        let class_vec = class::Entity::find().all(&*db).await.unwrap();
+        // 拷贝出与班级数相同的链接
+        let db_vec = (0..class_vec.len())
             .into_iter()
-            .map(|x| Arc::clone(&db))
+            .map(|_| Arc::clone(&db))
             .collect::<Vec<Arc<DatabaseConnection>>>();
-        let class_2_db = vec.into_iter().zip(vec_db.into_iter());
+        // 构建 class - 链接 的映射
+        let class_2_db = class_vec.into_iter().zip(db_vec.into_iter());
+        // 便利并查询每个班级的老师和学生
         let handles = class_2_db
             .into_iter()
             .map(|x| tokio::task::spawn(async move { class_model_2_class(x.0, &x.1).await }))
