@@ -22,7 +22,7 @@ pub struct SeaOrm {
 impl SeaOrm {
     pub async fn new() -> Result<SeaOrm, DbErr> {
         let db: DatabaseConnection =
-            Database::connect("mysql://root:abc123@127.0.0.1/mydb").await?;
+            Database::connect("mysql://root:abc123@mysql/mydb").await?;
         Ok(SeaOrm { db })
     }
 }
