@@ -1,8 +1,10 @@
-use crate::sea::teacher;
-use axum::async_trait;
 use std::sync::{Arc, Mutex};
+
+use axum::async_trait;
+
 use crate::err::SchoolErr;
 use crate::school::{Class, Gender, Student, Teacher};
+use crate::sea::teacher;
 
 #[async_trait]
 pub trait AsyncDb {
@@ -50,21 +52,21 @@ pub trait AsyncDb {
                 Arc::new(Mutex::new(qing_qing.clone())),
             ],
         );
-        // self.insert_class(class1);
-        // self.insert_class(class2);
-        // self.insert_class(class3);
-        // self.insert_class(class4);
+        self.insert_class(class1);
+        self.insert_class(class2);
+        self.insert_class(class3);
+        self.insert_class(class4);
         self.insert_teacher(zhang_san);
         self.insert_teacher(wang_wu);
         self.insert_teacher(li_si);
-        // self.insert_student(ming_ming.lock().unwrap().to_owned());
-        // self.insert_student(fang_fang.lock().unwrap().to_owned());
-        // self.insert_student(xiao_hong.lock().unwrap().to_owned());
-        // self.insert_student(xiao_bai.lock().unwrap().to_owned());
-        // self.insert_student(wang_hai.lock().unwrap().to_owned());
-        // self.insert_student(ling_ling.lock().unwrap().to_owned());
-        // self.insert_student(hui_hui.lock().unwrap().to_owned());
-        // self.insert_student(qing_qing.lock().unwrap().to_owned());
+        self.insert_student(ming_ming.lock().unwrap().to_owned());
+        self.insert_student(fang_fang.lock().unwrap().to_owned());
+        self.insert_student(xiao_hong.lock().unwrap().to_owned());
+        self.insert_student(xiao_bai.lock().unwrap().to_owned());
+        self.insert_student(wang_hai.lock().unwrap().to_owned());
+        self.insert_student(ling_ling.lock().unwrap().to_owned());
+        self.insert_student(hui_hui.lock().unwrap().to_owned());
+        self.insert_student(qing_qing.lock().unwrap().to_owned());
     }
     async fn insert_teacher(&mut self, teacher: Teacher) -> Result<Teacher, SchoolErr>;
     async fn get_teacher_by_name(&self, name: &str) -> Result<Arc<Mutex<Teacher>>, SchoolErr>;

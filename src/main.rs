@@ -18,7 +18,7 @@ use axum_web::db::hashmap_db::HashMapDb;
 use axum_web::db::mysql_db::MysqlDb;
 use axum_web::db::redis_db::RedisDb;
 use axum_web::err::SchoolErr::MysqlErr;
-use axum_web::school;
+use axum_web::{school, sea};
 use axum_web::school::{Class, Gender, Student, Teacher};
 use axum_web::school_proto::school_service_client::SchoolServiceClient;
 use axum_web::school_proto::StudentByNameRequest;
@@ -27,16 +27,15 @@ use axum_web::templates::askama_template::{HelloTemplate, TwitterTemplate};
 
 struct AppState<T> {
     db: T,
-    // client: SchoolServiceClient<Channel>,
+    client: SchoolServiceClient<Channel>,
     async_db: SeaOrm,
 }
 
 impl<T> AppState<T> {
-    // async fn new(db: T, client: SchoolServiceClient<Channel>, orm: SeaOrm) -> Self {
-    async fn new(db: T, orm: SeaOrm) -> Self {
+    async fn new(db: T, client: SchoolServiceClient<Channel>, orm: SeaOrm) -> Self {
         Self {
             db,
-            // client,
+            client,
             async_db: orm,
         }
     }
@@ -50,16 +49,15 @@ async fn main() {
     join!(web_server);
 }
 
-type DbState = Arc<RwLock<AppState<MysqlDb>>>;
+type DbState = Arc<RwLock<AppState<HashMapDb>>>;
 // type ClientState = Arc<RwLock<SchoolServiceClient<Channel>>>;
 
 async fn start_web_server() {
-    // let client = SchoolServiceClient::connect("http://127.0.0.1:10000")
-    //     .await
-    //     .unwrap();
+    let client = SchoolServiceClient::connect("http://school-server:10000")
+        .await
+        .unwrap();
     let db_state = Arc::new(RwLock::new(
-        // AppState::new(HashMapDb::default(), client, SeaOrm::new().await.unwrap()).await,
-        AppState::new(MysqlDb::default(),  SeaOrm::new().await.unwrap()).await,
+        AppState::new(HashMapDb::default(), client, SeaOrm::new().await.unwrap()).await,
     ));
 
     db_state.write().unwrap().db.init();
@@ -159,18 +157,17 @@ async fn student(
     State(db_state): State<DbState>,
     Path(name): Path<String>,
 ) -> Result<Json<Student>, StatusCode> {
-    // let request = tonic::Request::new(StudentByNameRequest { name: name.clone() });
-    // let mut client = db_state.write().unwrap().client.clone();
-    // let response = client.get_student_by_name(request).await.unwrap();
-    // Ok(Json(
-    //     Student::new(
-    //         response.get_ref().name.clone(),
-    //         Gender::from(response.get_ref().gender.clone()),
-    //         response.get_ref().age as u8,
-    //     )
-    //     .clone(),
-    // ))
-    todo!("not implemented")
+    let request = tonic::Request::new(StudentByNameRequest { name: name.clone() });
+    let mut client = db_state.write().unwrap().client.clone();
+    let response = client.get_student_by_name(request).await.unwrap();
+    Ok(Json(
+        Student::new(
+            response.get_ref().name.clone(),
+            Gender::from(response.get_ref().gender.clone()),
+            response.get_ref().age as u8,
+        )
+        .clone(),
+    ))
 }
 
 async fn teachers(State(db_state): State<DbState>) -> Result<Json<Vec<Teacher>>, StatusCode> {
@@ -283,18 +280,17 @@ async fn student_async(
     State(db_state): State<DbState>,
     Path(name): Path<String>,
 ) -> Result<Json<Student>, StatusCode> {
-    // let request = tonic::Request::new(StudentByNameRequest { name: name.clone() });
-    // let mut client = db_state.write().unwrap().client.clone();
-    // let response = client.get_student_by_name(request).await.unwrap();
-    // Ok(Json(
-    //     Student::new(
-    //         response.get_ref().name.clone(),
-    //         Gender::from(response.get_ref().gender.clone()),
-    //         response.get_ref().age as u8,
-    //     )
-    //     .clone(),
-    // ))
-    todo!("not implemented")
+    let request = tonic::Request::new(StudentByNameRequest { name: name.clone() });
+    let mut client = db_state.write().unwrap().client.clone();
+    let response = client.get_student_by_name(request).await.unwrap();
+    Ok(Json(
+        Student::new(
+            response.get_ref().name.clone(),
+            Gender::from(response.get_ref().gender.clone()),
+            response.get_ref().age as u8,
+        )
+        .clone(),
+    ))
 }
 
 async fn teachers_async(State(db_state): State<DbState>) -> Result<Json<Vec<Teacher>>, StatusCode> {
