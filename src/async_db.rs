@@ -59,14 +59,14 @@ pub trait AsyncDb {
         self.insert_teacher(zhang_san);
         self.insert_teacher(wang_wu);
         self.insert_teacher(li_si);
-        self.insert_student(ming_ming.lock().unwrap().to_owned());
-        self.insert_student(fang_fang.lock().unwrap().to_owned());
-        self.insert_student(xiao_hong.lock().unwrap().to_owned());
-        self.insert_student(xiao_bai.lock().unwrap().to_owned());
-        self.insert_student(wang_hai.lock().unwrap().to_owned());
-        self.insert_student(ling_ling.lock().unwrap().to_owned());
-        self.insert_student(hui_hui.lock().unwrap().to_owned());
-        self.insert_student(qing_qing.lock().unwrap().to_owned());
+        self.insert_student(ming_ming);
+        self.insert_student(fang_fang);
+        self.insert_student(xiao_hong);
+        self.insert_student(xiao_bai);
+        self.insert_student(wang_hai);
+        self.insert_student(ling_ling);
+        self.insert_student(hui_hui);
+        self.insert_student(qing_qing);
     }
     async fn insert_teacher(&mut self, teacher: Teacher) -> Result<Teacher, SchoolErr>;
     async fn get_teacher_by_name(&self, name: &str) -> Result<Arc<Mutex<Teacher>>, SchoolErr>;
