@@ -22,23 +22,25 @@ pub struct SeaOrm {
 impl SeaOrm {
     pub async fn new() -> Result<SeaOrm, DbErr> {
         let db: DatabaseConnection =
-            Database::connect("mysql://root:abc123@127.0.0.1/mydb").await?;
+            Database::connect("mysql://root:abc123@mysql/mydb").await?;
         Ok(SeaOrm { db })
     }
 }
 
-async fn class_model_2_class(class: class::Model, db: &DatabaseConnection) -> Arc<Mutex<Class>> {
+async fn class_model_2_class(
+    class: class::Model,
+    db: Arc<DatabaseConnection>,
+) -> Arc<Mutex<Class>> {
     let teacher = teacher::Entity::find()
         .filter(teacher::Column::Name.eq(class.teacher.unwrap()))
-        .one(db)
+        .one(&*db)
         .await
         .unwrap()
         .unwrap();
-    let students_name = class.students.unwrap();
-    // let students_name = students_name.split(",").collect::<Vec<&str>>();
+    let students = class.students.unwrap();
     let students = student::Entity::find()
-        .filter(student::Column::Name.is_in(students_name.split(",")))
-        .all(db)
+        .filter(student::Column::Name.is_in(students.split(",")))
+        .all(&*db)
         .await
         .unwrap()
         .into_iter()
@@ -139,19 +141,17 @@ impl AsyncDb for SeaOrm {
 
     async fn get_all_classes(&self) -> Result<Vec<Arc<Mutex<Class>>>, SchoolErr> {
         let db = Arc::new(DatabaseConnection::from_ref(&self.db));
-        // 查询所有班级
-        let class_vec = class::Entity::find().all(&*db).await.unwrap();
-        // 拷贝出与班级数相同的链接
+        let class_vec = class::Entity::find().all(&self.db).await.unwrap();
         let db_vec = (0..class_vec.len())
             .into_iter()
             .map(|_| Arc::clone(&db))
             .collect::<Vec<Arc<DatabaseConnection>>>();
-        // 构建 class - 链接 的映射
-        let class_2_db = class_vec.into_iter().zip(db_vec.into_iter());
-        // 便利并查询每个班级的老师和学生
-        let handles = class_2_db
+        let handles = class_vec
             .into_iter()
-            .map(|x| tokio::task::spawn(async move { class_model_2_class(x.0, &x.1).await }))
+            .zip(db_vec.into_iter())
+            .map(|(class, db)| {
+                tokio::task::spawn(async move { class_model_2_class(class, db).await })
+            })
             .collect::<Vec<JoinHandle<Arc<Mutex<Class>>>>>();
         let mut classes = vec![];
         for x in handles {

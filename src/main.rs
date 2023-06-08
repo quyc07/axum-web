@@ -18,7 +18,7 @@ use axum_web::db::hashmap_db::HashMapDb;
 use axum_web::db::mysql_db::MysqlDb;
 use axum_web::db::redis_db::RedisDb;
 use axum_web::err::SchoolErr::MysqlErr;
-use axum_web::school;
+use axum_web::{school, sea};
 use axum_web::school::{Class, Gender, Student, Teacher};
 use axum_web::school_proto::school_service_client::SchoolServiceClient;
 use axum_web::school_proto::StudentByNameRequest;
@@ -53,7 +53,7 @@ type DbState = Arc<RwLock<AppState<HashMapDb>>>;
 // type ClientState = Arc<RwLock<SchoolServiceClient<Channel>>>;
 
 async fn start_web_server() {
-    let client = SchoolServiceClient::connect("http://127.0.0.1:10000")
+    let client = SchoolServiceClient::connect("http://school-server:10000")
         .await
         .unwrap();
     let db_state = Arc::new(RwLock::new(
